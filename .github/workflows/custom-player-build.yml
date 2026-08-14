@@ -26,6 +26,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '15859902'
 
       - name: Install Android 17 preview platform
         run: yes | sdkmanager --channel=3 "platforms;android-37"
