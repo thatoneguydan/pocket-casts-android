@@ -4,7 +4,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -73,15 +78,28 @@ fun PlayerControls(
             }
     }.observeAsState(PlayerControlsData())
 
-    Content(
-        playerColors = playerColors,
-        playerControlsData = playerControlsData,
-        onPlayPauseClick = { playerViewModel.onPlayPauseClicked() },
-        onSkipForwardClick = { playerViewModel.onSkipForwardClick() },
-        onSkipBackClick = { playerViewModel.onSkipBackwardClick() },
-        onSkipForwardLongPress = { playerViewModel.onSkipForwardLongClick() },
-        modifier = modifier,
-    )
+    val showPlaybackEffectsControls = LocalConfiguration.current.screenHeightDp >= 600
+
+    Column(modifier = modifier) {
+        if (showPlaybackEffectsControls) {
+            PlaybackEffectsControls(
+                playerColors = playerColors,
+                playerViewModel = playerViewModel,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Content(
+            playerColors = playerColors,
+            playerControlsData = playerControlsData,
+            onPlayPauseClick = { playerViewModel.onPlayPauseClicked() },
+            onSkipForwardClick = { playerViewModel.onSkipForwardClick() },
+            onSkipBackClick = { playerViewModel.onSkipBackwardClick() },
+            onSkipForwardLongPress = { playerViewModel.onSkipForwardLongClick() },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterialApi::class)
