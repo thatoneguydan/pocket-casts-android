@@ -30,23 +30,9 @@ jobs:
           cmdline-tools-version: '15859902'
           packages: platform-tools
 
-      - name: Discover Android 17 SDK package
+      - name: Install Android 17 SDK
         run: |
-          sdkmanager --list --channel=3 > "$RUNNER_TEMP/sdk-packages.txt"
-          echo "=== Android 17 / API 37 candidates ==="
-          grep -i -E 'cinnamon|android-37|platforms;' "$RUNNER_TEMP/sdk-packages.txt" | tail -n 120 || true
-          echo "=== End candidates ==="
-
-      - name: Install Android 17 platform
-        run: |
-          if grep -q 'platforms;android-37' "$RUNNER_TEMP/sdk-packages.txt"; then
-            yes | sdkmanager --channel=3 "platforms;android-37"
-          elif grep -q 'platforms;android-CinnamonBun' "$RUNNER_TEMP/sdk-packages.txt"; then
-            yes | sdkmanager --channel=3 "platforms;android-CinnamonBun"
-          else
-            echo "Android 17 platform package was not found by sdkmanager."
-            exit 1
-          fi
+          yes | sdkmanager --channel=3 "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
