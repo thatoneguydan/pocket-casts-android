@@ -1,4 +1,33 @@
-# Custom Fork Changelog
+# Pocket Cantrips Changelog
+
+## v0.3-dev — 2026-08-15
+
+Player-density and branding pass focused on giving podcast artwork more room without shrinking thumb targets.
+
+### Changed
+
+- Renamed the forked app to **Pocket Cantrips**.
+- Replaced the `debugProd` alternate/debug launcher icon with Pocket Casts' normal production launcher asset so the side-by-side test build has a proper app icon.
+- Removed the dedicated Trim Silence switch/header row.
+- Trim Silence is now one always-visible four-button row: **Off / Mild / Medium / Mad Max**.
+- Kept all trim choices at 48dp high for comfortable thumb use.
+- Reduced the passive gap between the playback-effects card and stock transport controls from 18dp to 10dp.
+- Renamed the GitHub Actions workflow and installable artifact to Pocket Cantrips / `pocket-cantrips-apk`.
+
+### Preserved
+
+- Speed minus/plus remain 56dp-wide touch areas with a 48dp-high current-speed control.
+- Stock skip and play/pause transport controls remain unchanged, including the 80dp skip touch targets.
+- Playback effects persistence and global/per-podcast scope behavior.
+- Existing speed limits, 0.1x stepping, and speed-value tap cycle.
+- Trim Silence persistence and Mild / Medium / Mad Max behavior.
+- Volume Boost remains in the Playback Effects sheet.
+- Pocket Casts playback engine remains untouched.
+
+### Validation status
+
+- GitHub Actions compile gate pending for the v0.3 code state.
+- Physical UI validation still required for artwork size, trim-row fit, app name, and launcher icon.
 
 ## v0.2-dev — 2026-08-14
 
@@ -6,7 +35,7 @@ Thumb-friendliness and visual-polish pass based on the first successful physical
 
 ### Preserved rollback point
 
-- The complete working v0.1 state is preserved in the GitHub branch `custom-player-v0.1` at commit `5d6a0ab4d6650fd13b51ee7d09d19b16be8cff1d`.
+- The complete working v0.1 state is preserved in the GitHub branch `custom-player-v0.1`.
 - Ongoing development continues on `custom-player`.
 
 ### Changed
@@ -15,7 +44,7 @@ Thumb-friendliness and visual-polish pass based on the first successful physical
 - Current-speed button increased to a 48dp height with an 84dp minimum width.
 - Playback effects card corner radius reduced from 16dp to 14dp.
 - Divider between Speed and Trim Silence is visually softer.
-- Entire Trim Silence header row now toggles Trim Silence, while the existing switch remains functional.
+- Entire Trim Silence header row toggles Trim Silence, while the switch remains functional.
 - Mild / Medium / Mad Max controls receive additional horizontal space for easier thumb targeting.
 - Gap between the custom playback-effects card and stock transport controls increased from 12dp to 18dp.
 
@@ -30,7 +59,7 @@ Thumb-friendliness and visual-polish pass based on the first successful physical
 ### Validation status
 
 - v0.1 compiled successfully in GitHub Actions and was physically tested successfully on Android.
-- v0.2 awaits GitHub Actions compile and physical UI validation.
+- v0.2 advanced the player controls based on that physical test.
 
 ## v0.1-dev — 2026-08-14
 
@@ -47,8 +76,8 @@ Initial custom-player branch based on upstream commit `bf26d7aae4378997c05712ae4
 
 ### Changed
 
-- Main transport area now places playback effects above the normal skip/play/skip controls when space allows.
-- Playback Effects bottom sheet now focuses on effect scope and Volume Boost.
+- Main transport area places playback effects above the normal skip/play/skip controls when space allows.
+- Playback Effects bottom sheet focuses on effect scope and Volume Boost.
 
 ### Preserved
 
