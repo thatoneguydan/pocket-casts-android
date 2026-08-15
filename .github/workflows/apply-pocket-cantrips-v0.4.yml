@@ -22,34 +22,8 @@ jobs:
       - name: Apply branding and artwork-space fixes
         shell: bash
         run: |
-          python3 <<'PY'
-          from pathlib import Path
-
-          title_path = Path("app/src/debugProd/res/values/titles.xml")
-          title = title_path.read_text()
-          old_title = '<string name="app_name">Pocket Debug</string>'
-          new_title = '<string name="app_name">Pocket Cantrips</string>'
-          if old_title not in title:
-              raise SystemExit("Expected Pocket Debug source-set title was not found")
-          title_path.write_text(title.replace(old_title, new_title, 1))
-
-          player_path = Path("modules/features/player/src/main/java/au/com/shiftyjelly/pocketcasts/player/view/PlayerHeaderFragment.kt")
-          player = player_path.read_text()
-          old_block = """            val spacingDp = 16.dp
-            val spacingPx = spacingDp.roundToPx()
-            val availableHeightPx = constraints.maxHeight - (adPlaceable?.height ?: 0) - spacingPx
-"""
-          new_block = """            // Keep breathing room between an ad and artwork, but do not reserve that
-            // vertical space when there is no ad. The no-ad player can give the
-            // recovered height directly to the podcast artwork instead.
-            val spacingDp = if (adPlaceable != null) 16.dp else 0.dp
-            val spacingPx = spacingDp.roundToPx()
-            val availableHeightPx = constraints.maxHeight - (adPlaceable?.height ?: 0) - spacingPx
-"""
-          if old_block not in player:
-              raise SystemExit("Expected artwork spacing block was not found")
-          player_path.write_text(player.replace(old_block, new_block, 1))
-          PY
+          python3 -c 'from pathlib import Path; p=Path("app/src/debugProd/res/values/titles.xml"); s=p.read_text(); old="<string name=\"app_name\">Pocket Debug</string>"; new="<string name=\"app_name\">Pocket Cantrips</string>"; assert old in s; p.write_text(s.replace(old,new,1))'
+          python3 -c 'from pathlib import Path; p=Path("modules/features/player/src/main/java/au/com/shiftyjelly/pocketcasts/player/view/PlayerHeaderFragment.kt"); s=p.read_text(); old="            val spacingDp = 16.dp"; new="            val spacingDp = if (adPlaceable != null) 16.dp else 0.dp"; assert old in s; p.write_text(s.replace(old,new,1))'
 
       - name: Remove one-shot patch workflow
         shell: bash
