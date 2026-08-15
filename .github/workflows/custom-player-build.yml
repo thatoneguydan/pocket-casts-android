@@ -1,4 +1,4 @@
-name: Build custom player APK
+name: Build Pocket Cantrips APK
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: pocket-casts-custom-player-apk
+          name: pocket-cantrips-apk
           path: app/build/outputs/apk/debugProd/*.apk
           if-no-files-found: error
           retention-days: 30
