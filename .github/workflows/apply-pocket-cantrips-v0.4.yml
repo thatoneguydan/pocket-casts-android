@@ -20,8 +20,9 @@ jobs:
           ref: custom-player
 
       - name: Apply branding and artwork-space fixes
-        shell: python
+        shell: bash
         run: |
+          python3 <<'PY'
           from pathlib import Path
 
           title_path = Path("app/src/debugProd/res/values/titles.xml")
@@ -34,25 +35,28 @@ jobs:
 
           player_path = Path("modules/features/player/src/main/java/au/com/shiftyjelly/pocketcasts/player/view/PlayerHeaderFragment.kt")
           player = player_path.read_text()
-          old_block = '''            val spacingDp = 16.dp
+          old_block = """            val spacingDp = 16.dp
             val spacingPx = spacingDp.roundToPx()
             val availableHeightPx = constraints.maxHeight - (adPlaceable?.height ?: 0) - spacingPx
-'''
-          new_block = '''            // Keep breathing room between an ad and artwork, but do not reserve that
+"""
+          new_block = """            // Keep breathing room between an ad and artwork, but do not reserve that
             // vertical space when there is no ad. The no-ad player can give the
             // recovered height directly to the podcast artwork instead.
             val spacingDp = if (adPlaceable != null) 16.dp else 0.dp
             val spacingPx = spacingDp.roundToPx()
             val availableHeightPx = constraints.maxHeight - (adPlaceable?.height ?: 0) - spacingPx
-'''
+"""
           if old_block not in player:
               raise SystemExit("Expected artwork spacing block was not found")
           player_path.write_text(player.replace(old_block, new_block, 1))
+          PY
 
       - name: Remove one-shot patch workflow
+        shell: bash
         run: rm .github/workflows/apply-pocket-cantrips-v0.4.yml
 
       - name: Commit patch
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
