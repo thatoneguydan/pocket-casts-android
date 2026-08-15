@@ -81,7 +81,6 @@ Current approach:
 ### Added
 
 - `modules/features/player/src/main/java/au/com/shiftyjelly/pocketcasts/player/view/nowplaying/PlaybackEffectsControls.kt`
-- `app/src/main/res/values/pocket_cantrips.xml`
 - `.github/workflows/custom-player-build.yml`
 - `CUSTOM_FORK.md`
 - `CUSTOM_FORK_CHANGELOG.md`
@@ -91,6 +90,7 @@ Current approach:
 - `modules/features/player/src/main/java/au/com/shiftyjelly/pocketcasts/player/view/nowplaying/PlayerControls.kt`
 - `modules/features/player/src/main/java/au/com/shiftyjelly/pocketcasts/player/view/EffectsFragment.kt`
 - `modules/features/player/src/main/res/layout/fragment_effects.xml`
+- `app/src/main/res/values/titles.xml`
 - `app/build.gradle.kts`
 
 ## Build automation
