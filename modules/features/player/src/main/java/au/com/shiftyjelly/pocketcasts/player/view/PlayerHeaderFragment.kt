@@ -1093,7 +1093,7 @@ class PlayerHeaderFragment :
                 null
             }
 
-            val spacingDp = 16.dp
+            val spacingDp = if (adPlaceable != null) 16.dp else 0.dp
             val spacingPx = spacingDp.roundToPx()
             val availableHeightPx = constraints.maxHeight - (adPlaceable?.height ?: 0) - spacingPx
             val artworkPlaceable = if (!isTranscriptOpen && availableHeightPx > 64.dp.roundToPx()) {
