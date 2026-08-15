@@ -1,5 +1,28 @@
 # Pocket Cantrips Changelog
 
+## v0.4-dev — 2026-08-15
+
+Follow-up physical-device pass based on the v0.3 player screenshot.
+
+### Fixed
+
+- The side-by-side `debugProd` build now overrides its own source-set label from **Pocket Debug** to **Pocket Cantrips**, fixing the launcher/home-screen name that was still winning over the main app label.
+- Removed the no-ad 16dp artwork spacer. The 16dp spacing is now reserved only when an ad is actually present, allowing the portrait player to devote that height to podcast artwork.
+
+### Preserved
+
+- No transport or playback-effects touch target was reduced.
+- Speed and Trim Silence controls remain unchanged from v0.3.
+- The stock title, seek bar, transport, and shelf layouts remain unchanged.
+- Ads retain their existing 16dp separation from artwork.
+- Playback behavior and persistence remain untouched.
+
+### Validation status
+
+- Source changes applied to `custom-player` after physical validation of v0.3.
+- GitHub Actions compile gate pending for v0.4.
+- Physical validation required for the corrected launcher label and the larger no-ad artwork presentation.
+
 ## v0.3-dev — 2026-08-15
 
 Player-density and branding pass focused on giving podcast artwork more room without shrinking thumb targets.
@@ -26,8 +49,9 @@ Player-density and branding pass focused on giving podcast artwork more room wit
 
 ### Validation status
 
-- GitHub Actions compile gate pending for the v0.3 code state.
-- Physical UI validation still required for artwork size, trim-row fit, app name, and launcher icon.
+- GitHub Actions compile succeeded.
+- Physical-device validation confirmed the compact trim row and overall player layout.
+- Follow-up screenshot exposed the `debugProd` launcher label override and additional reclaimable no-ad artwork space; those are addressed in v0.4.
 
 ## v0.2-dev — 2026-08-14
 
