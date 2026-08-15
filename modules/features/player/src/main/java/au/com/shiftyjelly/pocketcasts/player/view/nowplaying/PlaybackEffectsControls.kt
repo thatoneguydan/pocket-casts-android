@@ -144,7 +144,7 @@ fun PlaybackEffectsControls(
 
     Surface(
         color = playerColors.background02,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, playerColors.contrast05),
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -154,7 +154,7 @@ fun PlaybackEffectsControls(
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = 56.dp)
-                    .padding(start = 12.dp, end = 4.dp),
+                    .padding(start = 12.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_speed),
@@ -171,7 +171,9 @@ fun PlaybackEffectsControls(
                 )
                 IconButton(
                     onClick = { changePlaybackSpeed(playbackSpeed - 0.1) },
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier
+                        .width(56.dp)
+                        .height(48.dp),
                 ) {
                     Text(
                         text = "−",
@@ -182,8 +184,8 @@ fun PlaybackEffectsControls(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .height(44.dp)
-                        .widthIn(min = 72.dp)
+                        .height(48.dp)
+                        .widthIn(min = 84.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .border(1.dp, playerColors.contrast04, RoundedCornerShape(6.dp))
                         .clickable(role = Role.Button) {
@@ -204,7 +206,9 @@ fun PlaybackEffectsControls(
                 }
                 IconButton(
                     onClick = { changePlaybackSpeed(playbackSpeed + 0.1) },
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier
+                        .width(56.dp)
+                        .height(48.dp),
                 ) {
                     Text(
                         text = "+",
@@ -214,13 +218,16 @@ fun PlaybackEffectsControls(
                 }
             }
 
-            Divider(color = playerColors.contrast05)
+            Divider(color = playerColors.contrast05.copy(alpha = 0.55f))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = 56.dp)
+                    .clickable(role = Role.Switch) {
+                        setTrimEnabled(trimMode == TrimMode.OFF)
+                    }
                     .padding(horizontal = 12.dp),
             ) {
                 Icon(
@@ -253,7 +260,7 @@ fun PlaybackEffectsControls(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 48.dp, end = 12.dp, bottom = 12.dp),
+                        .padding(start = 24.dp, end = 12.dp, bottom = 12.dp),
                 ) {
                     TrimModeButton(
                         text = stringResource(LR.string.player_effects_trim_mild),
