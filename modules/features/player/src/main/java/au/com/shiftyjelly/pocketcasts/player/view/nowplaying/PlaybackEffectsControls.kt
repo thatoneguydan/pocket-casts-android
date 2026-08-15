@@ -173,10 +173,10 @@ fun PlaybackEffectsControls(
                     onClick = { changePlaybackSpeed(playbackSpeed - 0.1) },
                     modifier = Modifier.size(48.dp),
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_minus),
-                        contentDescription = stringResource(LR.string.player_effects_speed_down),
-                        tint = playerColors.contrast02,
+                    Text(
+                        text = "−",
+                        color = playerColors.contrast02,
+                        style = MaterialTheme.typography.h5,
                     )
                 }
                 Box(
@@ -206,10 +206,10 @@ fun PlaybackEffectsControls(
                     onClick = { changePlaybackSpeed(playbackSpeed + 0.1) },
                     modifier = Modifier.size(48.dp),
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_effects_plus),
-                        contentDescription = stringResource(LR.string.player_effects_speed_up),
-                        tint = playerColors.contrast02,
+                    Text(
+                        text = "+",
+                        color = playerColors.contrast02,
+                        style = MaterialTheme.typography.h5,
                     )
                 }
             }
@@ -224,7 +224,7 @@ fun PlaybackEffectsControls(
                     .padding(horizontal = 12.dp),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_trim),
+                    painter = painterResource(R.drawable.ic_effects_on),
                     contentDescription = null,
                     tint = playerColors.contrast02,
                     modifier = Modifier.size(24.dp),
