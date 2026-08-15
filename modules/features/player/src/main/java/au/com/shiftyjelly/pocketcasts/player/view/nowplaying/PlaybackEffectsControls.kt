@@ -1,9 +1,9 @@
 package au.com.shiftyjelly.pocketcasts.player.view.nowplaying
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,11 +25,11 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -146,7 +146,7 @@ fun PlaybackEffectsControls(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .defaultMinSize(minHeight = 56.dp)
+                    .defaultMinSize(minHeight = 52.dp)
                     .padding(start = 12.dp),
             ) {
                 Icon(
@@ -177,7 +177,7 @@ fun PlaybackEffectsControls(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .height(48.dp)
+                        .height(44.dp)
                         .widthIn(min = 84.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .border(1.dp, playerColors.contrast04, RoundedCornerShape(6.dp))
@@ -211,14 +211,13 @@ fun PlaybackEffectsControls(
                 }
             }
 
-            Divider(color = playerColors.contrast05.copy(alpha = 0.55f))
+            Divider(color = playerColors.contrast05.copy(alpha = 0.7f))
 
             Row(
-                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .height(48.dp),
             ) {
                 TrimModeButton(
                     text = stringResource(LR.string.off),
@@ -228,6 +227,7 @@ fun PlaybackEffectsControls(
                     onClick = { setTrimMode(TrimMode.OFF) },
                     modifier = Modifier.weight(1f),
                 )
+                TrimModeDivider(playerColors)
                 TrimModeButton(
                     text = stringResource(LR.string.player_effects_trim_mild),
                     selected = trimMode == TrimMode.LOW,
@@ -236,6 +236,7 @@ fun PlaybackEffectsControls(
                     onClick = { setTrimMode(TrimMode.LOW) },
                     modifier = Modifier.weight(1f),
                 )
+                TrimModeDivider(playerColors)
                 TrimModeButton(
                     text = stringResource(LR.string.player_effects_trim_medium),
                     selected = trimMode == TrimMode.MEDIUM,
@@ -244,6 +245,7 @@ fun PlaybackEffectsControls(
                     onClick = { setTrimMode(TrimMode.MEDIUM) },
                     modifier = Modifier.weight(1f),
                 )
+                TrimModeDivider(playerColors)
                 TrimModeButton(
                     text = stringResource(LR.string.player_effects_trim_mad_max),
                     selected = trimMode == TrimMode.HIGH,
@@ -267,9 +269,9 @@ private fun TrimModeButton(
     modifier: Modifier = Modifier,
 ) {
     val shape = when (position) {
-        TrimButtonPosition.Left -> RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
+        TrimButtonPosition.Left -> RoundedCornerShape(bottomStart = 13.dp)
         TrimButtonPosition.Middle -> RoundedCornerShape(0.dp)
-        TrimButtonPosition.Right -> RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)
+        TrimButtonPosition.Right -> RoundedCornerShape(bottomEnd = 13.dp)
     }
     val backgroundColor = if (selected) playerColors.contrast01 else Color.Transparent
     val textColor = if (selected) playerColors.background01 else playerColors.contrast01
@@ -277,7 +279,6 @@ private fun TrimModeButton(
     Surface(
         color = backgroundColor,
         shape = shape,
-        border = BorderStroke(1.dp, playerColors.contrast04),
         modifier = modifier
             .height(48.dp)
             .clickable(role = Role.Button, onClick = onClick),
@@ -291,6 +292,16 @@ private fun TrimModeButton(
             )
         }
     }
+}
+
+@Composable
+private fun TrimModeDivider(playerColors: PlayerColors) {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(48.dp)
+            .background(playerColors.contrast04),
+    )
 }
 
 private enum class TrimButtonPosition {
