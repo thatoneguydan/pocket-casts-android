@@ -1,5 +1,31 @@
 # Pocket Cantrips Changelog
 
+## v0.6-dev — 2026-08-15
+
+Physical-device hierarchy pass focused on making the always-visible playback effects read as secondary controls beneath the primary transport controls.
+
+### Changed
+
+- Replaced the solid white selected Trim Silence segment with a subtle translucent highlight so it no longer competes visually with the primary play/pause button.
+- Lowered unselected trim-label contrast while keeping the selected label fully legible.
+- Softened the playback-effects card outline, section divider, and internal trim dividers.
+- Reduced visual emphasis on the Speed icon, label, minus/plus glyphs, and current-speed value.
+- Added only a very faint fill to the current-speed box and softened its outline.
+
+### Preserved
+
+- All v0.5 dimensions and touch targets are unchanged.
+- Trim choices remain 48dp high and edge-to-edge within the card.
+- Speed minus/plus remain 56dp wide with 48dp-high touch areas.
+- Stock transport controls, artwork, title, seek bar, and shelf layout remain unchanged.
+- Playback behavior, persistence, effect scope, and Volume Boost behavior remain untouched.
+
+### Validation status
+
+- Source changes applied to `custom-player` after physical validation of v0.5.
+- GitHub Actions `debugProd` compile gate pending.
+- Physical-device validation required for the quieter secondary-control hierarchy.
+
 ## v0.5-dev — 2026-08-15
 
 Physical-device polish pass focused on the trim selector and transport spacing.
