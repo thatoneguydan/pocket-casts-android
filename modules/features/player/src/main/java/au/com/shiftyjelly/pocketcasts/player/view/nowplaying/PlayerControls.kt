@@ -87,7 +87,7 @@ fun PlayerControls(
                 playerViewModel = playerViewModel,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
         Content(
