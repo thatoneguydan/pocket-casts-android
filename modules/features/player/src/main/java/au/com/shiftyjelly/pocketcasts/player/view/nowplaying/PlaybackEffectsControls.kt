@@ -138,7 +138,7 @@ fun PlaybackEffectsControls(
     Surface(
         color = playerColors.background02,
         shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, playerColors.contrast05),
+        border = BorderStroke(1.dp, playerColors.contrast05.copy(alpha = 0.7f)),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column {
@@ -152,13 +152,13 @@ fun PlaybackEffectsControls(
                 Icon(
                     painter = painterResource(R.drawable.ic_speed),
                     contentDescription = null,
-                    tint = playerColors.contrast02,
+                    tint = playerColors.contrast02.copy(alpha = 0.72f),
                     modifier = Modifier.size(24.dp),
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = stringResource(LR.string.player_effects_speed),
-                    color = playerColors.contrast01,
+                    color = playerColors.contrast01.copy(alpha = 0.86f),
                     style = MaterialTheme.typography.subtitle1,
                     modifier = Modifier.weight(1f),
                 )
@@ -170,7 +170,7 @@ fun PlaybackEffectsControls(
                 ) {
                     Text(
                         text = "−",
-                        color = playerColors.contrast02,
+                        color = playerColors.contrast02.copy(alpha = 0.78f),
                         style = MaterialTheme.typography.h5,
                     )
                 }
@@ -180,7 +180,8 @@ fun PlaybackEffectsControls(
                         .height(44.dp)
                         .widthIn(min = 84.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .border(1.dp, playerColors.contrast04, RoundedCornerShape(6.dp))
+                        .background(playerColors.contrast01.copy(alpha = 0.035f))
+                        .border(1.dp, playerColors.contrast05.copy(alpha = 0.85f), RoundedCornerShape(6.dp))
                         .clickable(role = Role.Button) {
                             val nextSpeed = when (playbackSpeed.roundedSpeed()) {
                                 1.0 -> 1.5
@@ -193,7 +194,7 @@ fun PlaybackEffectsControls(
                 ) {
                     Text(
                         text = String.format("%.1fx", playbackSpeed),
-                        color = playerColors.contrast01,
+                        color = playerColors.contrast01.copy(alpha = 0.9f),
                         style = MaterialTheme.typography.subtitle1,
                     )
                 }
@@ -205,13 +206,13 @@ fun PlaybackEffectsControls(
                 ) {
                     Text(
                         text = "+",
-                        color = playerColors.contrast02,
+                        color = playerColors.contrast02.copy(alpha = 0.78f),
                         style = MaterialTheme.typography.h5,
                     )
                 }
             }
 
-            Divider(color = playerColors.contrast05.copy(alpha = 0.7f))
+            Divider(color = playerColors.contrast05.copy(alpha = 0.42f))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -273,8 +274,8 @@ private fun TrimModeButton(
         TrimButtonPosition.Middle -> RoundedCornerShape(0.dp)
         TrimButtonPosition.Right -> RoundedCornerShape(bottomEnd = 13.dp)
     }
-    val backgroundColor = if (selected) playerColors.contrast01 else Color.Transparent
-    val textColor = if (selected) playerColors.background01 else playerColors.contrast01
+    val backgroundColor = if (selected) playerColors.contrast01.copy(alpha = 0.14f) else Color.Transparent
+    val textColor = if (selected) playerColors.contrast01 else playerColors.contrast01.copy(alpha = 0.78f)
 
     Surface(
         color = backgroundColor,
@@ -300,7 +301,7 @@ private fun TrimModeDivider(playerColors: PlayerColors) {
         modifier = Modifier
             .width(1.dp)
             .height(48.dp)
-            .background(playerColors.contrast04),
+            .background(playerColors.contrast05.copy(alpha = 0.62f)),
     )
 }
 
