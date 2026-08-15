@@ -1,5 +1,32 @@
 # Pocket Cantrips Changelog
 
+## v0.5-dev — 2026-08-15
+
+Physical-device polish pass focused on the trim selector and transport spacing.
+
+### Changed
+
+- The four Trim Silence choices now visually fill the playback-effects card from edge to edge instead of sitting as a second inset outlined control.
+- The effects card's own left/right/bottom outline and the divider above the trim row form the trim selector's outer outline; only the three internal segment dividers are drawn inside it.
+- Selected edge segments follow the effects card's lower corner radius so the control reads as one integrated surface.
+- Removed the trim row's 12dp horizontal and 4dp vertical inset padding while preserving 48dp-high trim touch targets.
+- Reduced the speed row minimum height from 56dp to 52dp and the visible current-speed box from 48dp to 44dp; the minus/plus controls retain their 48dp-high touch areas.
+- Increased the gap between the effects card and stock transport row from 10dp to 18dp so rewind/play/forward have more breathing room above them.
+
+### Preserved
+
+- Stock transport controls remain unchanged, including 80dp skip touch targets.
+- Trim choices remain 48dp high.
+- Speed minus/plus remain 56dp wide with 48dp-high touch areas.
+- Playback behavior, persistence, effect scope, and Volume Boost behavior remain untouched.
+- Artwork/title/seek/shelf layouts remain unchanged from v0.4.
+
+### Validation status
+
+- Source changes staged on `custom-player`.
+- GitHub Actions `debugProd` compile gate pending.
+- Physical-device validation required for trim-row visual integration and transport spacing balance.
+
 ## v0.4-dev — 2026-08-15
 
 Follow-up physical-device pass based on the v0.3 player screenshot.
