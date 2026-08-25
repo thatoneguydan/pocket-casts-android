@@ -153,7 +153,7 @@ jobs:
               throw "Active-Work #$issueNumber must be an open [ACTIVE WORK] issue."
             }
 
-            $registryMatches = @([regex]::Matches([string]$issue.body, '(?im)^\s*[-*]\s+\*\*Work ID:\*\*\s*(?<value>[^\r\n]+?)\s*$'))
+            $registryMatches = @([regex]::Matches([string]$issue.body, '(?im)^\s*(?:[-*]\s+)?\*\*Work ID:\*\*\s*(?<value>[^\r\n]+?)\s*$'))
             if ($registryMatches.Count -ne 1) { throw "Active-Work #$issueNumber must contain exactly one '**Work ID:**' field." }
             $registryWorkId = [string]$registryMatches[0].Groups['value'].Value.Trim()
             if ($registryWorkId -ne $workId) {
