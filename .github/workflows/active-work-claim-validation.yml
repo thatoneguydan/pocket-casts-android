@@ -21,7 +21,7 @@ concurrency:
 jobs:
   validate-active-work-claim:
     name: Validate active-work ownership
-    runs-on: [self-hosted, Windows, X64, glass-builder]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ github.token }}
@@ -31,7 +31,7 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
     steps:
       - name: Validate claim metadata and collisions
-        shell: powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
+        shell: pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
 
