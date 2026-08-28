@@ -1,5 +1,25 @@
 # Pocket Cantrips Changelog
 
+## v0.7.1-dev — 2026-08-28
+
+Follow-up to the home-LAN routing fix after physical testing exposed a network-transition edge case.
+
+### Open regression
+
+- Cold-starting Pocket Cantrips while already connected to the home Wi-Fi correctly routes D&D playback directly to Gigachomper and removes the ~15 second startup delay.
+- If the app remains open while the phone reconnects to home Wi-Fi, a subsequent D&D episode can still take the slow public hairpin path.
+- Force-stopping and relaunching Pocket Cantrips while on home Wi-Fi restores the fast route.
+
+### Diagnosis
+
+- The behavior is consistent with the long-lived `@Player` OkHttp client retaining connection/route state across Android default-network transitions.
+- The next fix must invalidate player connection state when the default Android network changes, without touching global Android networking or unrelated Pocket Casts clients.
+
+### Validation required
+
+- Launch Pocket Cantrips off-LAN, reconnect to the home Wi-Fi without force-stopping, and start a fresh D&D episode.
+- Confirm prompt startup, then recheck cold-start home Wi-Fi behavior and public fallback away from home.
+
 ## v0.7-dev — 2026-08-28
 
 Networking pass for the private D&D podcast host after reproducing a home-LAN NAT-loopback delay on the AT&T BGW320 gateway.
@@ -29,7 +49,7 @@ Networking pass for the private D&D podcast host after reproducing a home-LAN NA
 
 - DNS routing logic has unit coverage for home-LAN preference, off-LAN fallback, unrelated hosts, detector failure fallback, and home-network matching.
 - GitHub Actions `debugProd` build run #24 passed after merge to `custom-player`.
-- Physical-device validation succeeded on 2026-08-28; the user reported the installed v0.7 build works correctly and the home-LAN playback-delay fix is effective, with no regressions reported.
+- Initial home-Wi-Fi cold-start validation succeeded, but the later network-switch regression above means v0.7 is not considered stable.
 
 ## v0.6-dev — 2026-08-15
 
@@ -118,7 +138,7 @@ Player-density and branding pass focused on giving podcast artwork more room wit
 - Removed the dedicated Trim Silence switch/header row.
 - Trim Silence is now one always-visible four-button row: **Off / Mild / Medium / Mad Max**.
 - Kept all trim choices at 48dp high for comfortable thumb use.
-- Reduced the passive gap between the playback-effects card and stock transport controls from 18dp to 10dp.
+- Reduced the passive gap between the custom playback-effects card and stock transport controls from 18dp to 10dp.
 - Renamed the GitHub Actions workflow and installable artifact to Pocket Cantrips / `pocket-cantrips-apk`.
 
 ### Preserved
