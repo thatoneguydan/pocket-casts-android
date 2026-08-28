@@ -103,6 +103,53 @@ class GigachomperPlaybackDnsTest {
         )
     }
 
+    @Test
+    fun `initial default network does not invalidate player routes`() {
+        var invalidations = 0
+        val tracker = GigachomperDefaultNetworkTracker { invalidations++ }
+
+        tracker.onAvailable(100L)
+        tracker.onAvailable(100L)
+
+        assertEquals(0, invalidations)
+    }
+
+    @Test
+    fun `changing default network invalidates player routes once`() {
+        var invalidations = 0
+        val tracker = GigachomperDefaultNetworkTracker { invalidations++ }
+
+        tracker.onAvailable(100L)
+        tracker.onAvailable(200L)
+        tracker.onAvailable(200L)
+
+        assertEquals(1, invalidations)
+    }
+
+    @Test
+    fun `losing current default network invalidates player routes`() {
+        var invalidations = 0
+        val tracker = GigachomperDefaultNetworkTracker { invalidations++ }
+
+        tracker.onAvailable(100L)
+        tracker.onLost(100L)
+        tracker.onAvailable(200L)
+
+        assertEquals(1, invalidations)
+    }
+
+    @Test
+    fun `losing stale network does not invalidate current player routes`() {
+        var invalidations = 0
+        val tracker = GigachomperDefaultNetworkTracker { invalidations++ }
+
+        tracker.onAvailable(100L)
+        tracker.onAvailable(200L)
+        tracker.onLost(100L)
+
+        assertEquals(1, invalidations)
+    }
+
     private fun ipv4(first: Int, second: Int, third: Int, fourth: Int): InetAddress {
         return InetAddress.getByAddress(
             byteArrayOf(first.toByte(), second.toByte(), third.toByte(), fourth.toByte()),

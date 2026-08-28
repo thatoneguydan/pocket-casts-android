@@ -2,6 +2,7 @@ package au.com.shiftyjelly.pocketcasts.servers.di
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import java.net.InetAddress
 import okhttp3.Dns
@@ -67,6 +68,64 @@ internal class GigachomperHomeLanDetector(context: Context) {
                 .filter { it.isDefaultRoute }
                 .mapNotNull { it.gateway },
         )
+    }
+}
+
+/**
+ * Watches Android's default-network identity for the lifetime of the singleton player client.
+ * When the default network changes, callers invalidate only the player's connection pool so a
+ * later request cannot reuse a route selected on the previous network.
+ */
+internal class GigachomperPlaybackNetworkObserver(
+    context: Context,
+    onDefaultNetworkChanged: () -> Unit,
+) {
+    private val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+    private val transitionTracker = GigachomperDefaultNetworkTracker(onDefaultNetworkChanged)
+    private val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            transitionTracker.onAvailable(network.networkHandle)
+        }
+
+        override fun onLost(network: Network) {
+            transitionTracker.onLost(network.networkHandle)
+        }
+    }
+
+    fun start() {
+        runCatching {
+            connectivityManager?.registerDefaultNetworkCallback(callback)
+        }
+    }
+}
+
+/**
+ * Pure state machine kept separate from Android callbacks so transition semantics stay unit-testable.
+ * Initial network discovery is not considered a transition; moving away from an established default
+ * network is.
+ */
+internal class GigachomperDefaultNetworkTracker(
+    private val onDefaultNetworkChanged: () -> Unit,
+) {
+    private var currentNetworkHandle: Long? = null
+
+    @Synchronized
+    fun onAvailable(networkHandle: Long) {
+        val previousHandle = currentNetworkHandle
+        currentNetworkHandle = networkHandle
+
+        if (previousHandle != null && previousHandle != networkHandle) {
+            onDefaultNetworkChanged()
+        }
+    }
+
+    @Synchronized
+    fun onLost(networkHandle: Long) {
+        if (currentNetworkHandle == networkHandle) {
+            currentNetworkHandle = null
+            onDefaultNetworkChanged()
+        }
     }
 }
 
