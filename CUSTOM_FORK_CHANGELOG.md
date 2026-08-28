@@ -28,7 +28,8 @@ Networking pass for the private D&D podcast host after reproducing a home-LAN NA
 ### Validation status
 
 - DNS routing logic has unit coverage for home-LAN preference, off-LAN fallback, unrelated hosts, detector failure fallback, and home-network matching.
-- Repository compile/build gate and physical-device playback validation are required before treating v0.7 as stable.
+- GitHub Actions `debugProd` build run #24 passed after merge to `custom-player`.
+- Physical-device validation succeeded on 2026-08-28; the user reported the installed v0.7 build works correctly and the home-LAN playback-delay fix is effective, with no regressions reported.
 
 ## v0.6-dev — 2026-08-15
 
