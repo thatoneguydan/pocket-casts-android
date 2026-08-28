@@ -211,10 +211,14 @@ class NetworkModule {
     @Singleton
     @Player
     fun providePlayerClient(
+        @ApplicationContext context: Context,
         @Raw client: OkHttpClient,
         @Player interceptors: List<@JvmSuppressWildcards OkHttpInterceptor>,
     ): OkHttpClient {
+        val homeLanDetector = GigachomperHomeLanDetector(context)
+
         return client.newBuilder()
+            .dns(GigachomperPlaybackDns(homeLanDetector::isOnHomeLan))
             .addInterceptors(interceptors)
             .connectTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
