@@ -51,10 +51,10 @@ internal class GigachomperPlaybackDns(
 /**
  * Finds the actual Android Network representing the known home Wi-Fi LAN.
  *
- * This intentionally scans all currently connected networks instead of trusting activeNetwork.
- * A long-lived Android process can temporarily retain a different default-network view while the
- * home Wi-Fi is already attached. Binding player sockets to the matching Network avoids depending
- * on that process/default-network timing.
+ * A long-lived Android process can temporarily retain a stale default-network view after moving
+ * between cellular and Wi-Fi. The Wi-Fi callback therefore records every matching Network while
+ * activeNetwork remains an immediate cold-start fallback. Player sockets can then bind to the
+ * actual home Wi-Fi Network without relying on deprecated all-network enumeration.
  *
  * Public visibility is limited to Java interoperability for the adjacent dynamic socket factory;
  * this remains an implementation detail of the servers module.
@@ -67,8 +67,15 @@ class GigachomperHomeLanDetector(context: Context) {
 
     fun homeNetwork(): Network? {
         val manager = connectivityManager ?: return null
+        val candidates = GigachomperWifiNetworkRegistry.snapshot().toMutableList()
 
-        return manager.allNetworks.firstOrNull { network ->
+        manager.activeNetwork?.let { activeNetwork ->
+            if (activeNetwork !in candidates) {
+                candidates.add(activeNetwork)
+            }
+        }
+
+        return candidates.firstOrNull { network ->
             val capabilities = manager.getNetworkCapabilities(network) ?: return@firstOrNull false
             val linkProperties = manager.getLinkProperties(network) ?: return@firstOrNull false
 
@@ -84,10 +91,10 @@ class GigachomperHomeLanDetector(context: Context) {
 }
 
 /**
- * Watches Wi-Fi network state rather than only Android's default network. Every relevant Wi-Fi
- * availability, loss, capability, or link-property change invalidates only the isolated player
- * connection pool. The next player request then creates a fresh socket and re-evaluates both the
- * home-LAN DNS preference and the matching Android Network binding.
+ * Watches Wi-Fi network state rather than only Android's default network. The callback also keeps
+ * a process-local registry of currently attached Wi-Fi Network objects. Every relevant change
+ * invalidates only the isolated player connection pool; the next player request then re-evaluates
+ * both the home-LAN DNS preference and the matching Android Network binding.
  */
 internal class GigachomperPlaybackNetworkObserver(
     context: Context,
@@ -97,18 +104,22 @@ internal class GigachomperPlaybackNetworkObserver(
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
+            GigachomperWifiNetworkRegistry.add(network)
             onWifiNetworkChanged()
         }
 
         override fun onLost(network: Network) {
+            GigachomperWifiNetworkRegistry.remove(network)
             onWifiNetworkChanged()
         }
 
         override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            GigachomperWifiNetworkRegistry.add(network)
             onWifiNetworkChanged()
         }
 
         override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+            GigachomperWifiNetworkRegistry.add(network)
             onWifiNetworkChanged()
         }
     }
@@ -120,6 +131,27 @@ internal class GigachomperPlaybackNetworkObserver(
                 .build()
             connectivityManager?.registerNetworkCallback(request, callback)
         }
+    }
+}
+
+internal object GigachomperWifiNetworkRegistry {
+    private val lock = Any()
+    private val wifiNetworks = linkedSetOf<Network>()
+
+    fun add(network: Network) {
+        synchronized(lock) {
+            wifiNetworks.add(network)
+        }
+    }
+
+    fun remove(network: Network) {
+        synchronized(lock) {
+            wifiNetworks.remove(network)
+        }
+    }
+
+    fun snapshot(): List<Network> = synchronized(lock) {
+        wifiNetworks.toList()
     }
 }
 
