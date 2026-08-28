@@ -220,6 +220,7 @@ class NetworkModule {
         val playerConnectionPool = ConnectionPool()
         val playerClient = client.newBuilder()
             .connectionPool(playerConnectionPool)
+            .socketFactory(GigachomperPlayerSocketFactory(homeLanDetector, client.socketFactory))
             .dns(GigachomperPlaybackDns(homeLanDetector::isOnHomeLan))
             .addInterceptors(interceptors)
             .connectTimeout(60, TimeUnit.SECONDS)
