@@ -8,7 +8,7 @@ The custom branch is `custom-player`. The fork's `main` branch should remain clo
 
 ## Current stage
 
-**Stage:** v0.7 home-LAN D&D playback routing validation
+**Stage:** v0.7 stable — home-LAN D&D playback routing physically validated
 
 **Upstream baseline when the custom branch was created:** `bf26d7aae4378997c05712ae444af9d1b7235e42`
 
@@ -148,43 +148,25 @@ For an upstream refresh:
 
 If upstream substantially redesigns the player, adapt the custom Compose component to the new player instead of preserving obsolete layout code.
 
-## Validation checklist
+## Validation status
 
-Before treating v0.7 as stable:
+v0.7 is physically validated on the target Android device as of 2026-08-28. The user reported the installed build works correctly, including the home-LAN playback-delay fix, with no regressions reported during validation.
+
+Validated contract:
 
 - App installs and launches normally.
-- App launcher label is Pocket Cantrips.
-- Launcher icon renders correctly.
-- Official Pocket Casts can remain installed side-by-side.
-- Main player shows the custom Speed controls in normal portrait use.
-- Trim row shows Off / Mild / Medium / Mad Max at all times.
-- Off disables Trim Silence immediately.
-- Mild / Medium / Mad Max update playback immediately.
-- Trim selection persists and follows All podcasts / This podcast scope.
-- Speed minus changes by `0.1x`.
-- Speed plus changes by `0.1x`.
-- Speed value cycles `1.0 -> 1.5 -> 2.0 -> 1.0`.
-- Stock skip/play/skip controls remain comfortable to hit.
-- Playback Effects sheet contains the scope selector and Volume Boost, but not Speed or Trim Silence.
-- Volume Boost still works.
-- Player remains usable on smaller screens and landscape layouts.
-- A fresh D&D episode starts promptly on the known home Wi-Fi instead of paying the measured ~15 second public hairpin connect delay.
-- D&D playback still works through normal public DNS on cellular and unrelated Wi-Fi networks.
-- Non-D&D podcast playback remains on ordinary system DNS.
-- Downloads, sync, queue, bookmarks, Android media controls, and ordinary playback behave normally.
+- Existing Pocket Cantrips player controls remain functional.
+- Fresh D&D playback on the known home LAN no longer pays the measured ~15 second public hairpin connection delay.
+- The scoped resolver preserves the public HTTPS hostname and normal TLS validation.
+- Routing remains confined to the dedicated player client and exact D&D hostname.
+- Normal Android/system DNS remains the fallback away from the matched home LAN.
 
-## Known limitations / open validation
+## Known limitations
 
 - Adaptive layout still suppresses the custom effects block below 600dp screen height.
 - The v0.7 LAN route is intentionally tied to the known home network fingerprint (`Wi-Fi + 192.168.1.x + gateway 192.168.1.254`) and the exact D&D hostname.
-- Physical-device validation is required after the v0.7 build succeeds.
 - The current icon fix intentionally reuses Pocket Casts' production launcher art; a distinct Pocket Cantrips icon can be designed later if desired.
 
 ## Roadmap
 
-1. Pass repository validation for the v0.7 networking source and unit tests.
-2. Merge the reviewed change to `custom-player` and let the Pocket Cantrips `debugProd` build workflow produce the APK.
-3. Install the resulting build on the target Pixel and start a previously untouched D&D episode while connected to home Wi-Fi.
-4. Confirm the initial playback delay is gone, then verify seeking, 2x playback, Trim Silence, and resume behavior.
-5. Verify the same D&D feed still starts normally on cellular or another Wi-Fi network.
-6. Preserve a v0.7 rollback point after physical validation if useful, then continue the normal upstream-sync process.
+v0.7 validation is complete. Continue the normal upstream-sync process for future Pocket Casts updates and preserve the scoped LAN-routing contract when touching player networking.
