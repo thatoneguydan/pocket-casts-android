@@ -4,10 +4,12 @@ import au.com.shiftyjelly.pocketcasts.models.entity.Podcast
 import au.com.shiftyjelly.pocketcasts.models.entity.PodcastEpisode
 import au.com.shiftyjelly.pocketcasts.models.entity.PodcastRatings
 import au.com.shiftyjelly.pocketcasts.models.entity.SuggestedFolder
+import au.com.shiftyjelly.pocketcasts.servers.di.GigachomperPlaybackDns
 import au.com.shiftyjelly.pocketcasts.servers.discover.EpisodeSearch
 import au.com.shiftyjelly.pocketcasts.servers.sync.bookmark.BookmarkEnrichRequest
 import au.com.shiftyjelly.pocketcasts.servers.sync.bookmark.BookmarkEnrichResponse
 import io.reactivex.Single
+import java.net.URI
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -73,6 +75,12 @@ class PodcastCacheServiceManagerImpl @Inject constructor(
     }
 
     override suspend fun getEpisodeUrl(episode: PodcastEpisode): String? = withContext(Dispatchers.IO) {
+        val existingUrl = episode.downloadUrl
+        if (existingUrl != null && isGigachomperPlaybackUrl(existingUrl)) {
+            Timber.i("Using stable Gigachomper episode URL for ${episode.uuid}")
+            return@withContext existingUrl
+        }
+
         try {
             val response = service.getEpisodeUrl(episode.podcastUuid, episode.uuid)
             if (response.isSuccessful) {
@@ -112,3 +120,7 @@ class PodcastCacheServiceManagerImpl @Inject constructor(
         }
     }
 }
+
+internal fun isGigachomperPlaybackUrl(url: String): Boolean = runCatching {
+    URI(url).host?.equals(GigachomperPlaybackDns.PUBLIC_HOST, ignoreCase = true) == true
+}.getOrDefault(false)
