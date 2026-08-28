@@ -55,8 +55,11 @@ internal class GigachomperPlaybackDns(
  * A long-lived Android process can temporarily retain a different default-network view while the
  * home Wi-Fi is already attached. Binding player sockets to the matching Network avoids depending
  * on that process/default-network timing.
+ *
+ * Public visibility is limited to Java interoperability for the adjacent dynamic socket factory;
+ * this remains an implementation detail of the servers module.
  */
-internal class GigachomperHomeLanDetector(context: Context) {
+class GigachomperHomeLanDetector(context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
 
