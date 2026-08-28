@@ -1,9 +1,9 @@
 package au.com.shiftyjelly.pocketcasts.servers.di;
 
+import android.net.Network;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.function.Supplier;
 import javax.net.SocketFactory;
 
 /**
@@ -14,18 +14,27 @@ import javax.net.SocketFactory;
  * recreating the singleton OkHttp client.
  */
 final class GigachomperPlayerSocketFactory extends SocketFactory {
-    private final Supplier<SocketFactory> socketFactorySupplier;
+    private final GigachomperHomeLanDetector homeLanDetector;
+    private final SocketFactory fallbackSocketFactory;
 
-    GigachomperPlayerSocketFactory(Supplier<SocketFactory> socketFactorySupplier) {
-        this.socketFactorySupplier = socketFactorySupplier;
+    GigachomperPlayerSocketFactory(
+            GigachomperHomeLanDetector homeLanDetector,
+            SocketFactory fallbackSocketFactory
+    ) {
+        this.homeLanDetector = homeLanDetector;
+        this.fallbackSocketFactory = fallbackSocketFactory;
     }
 
     private SocketFactory currentSocketFactory() {
-        SocketFactory socketFactory = socketFactorySupplier.get();
-        if (socketFactory == null) {
-            throw new IllegalStateException("Player socket factory supplier returned null");
+        try {
+            Network homeNetwork = homeLanDetector.homeNetwork();
+            if (homeNetwork != null) {
+                return homeNetwork.getSocketFactory();
+            }
+        } catch (RuntimeException ignored) {
+            // Preserve normal Android networking if network inspection races a transition.
         }
-        return socketFactory;
+        return fallbackSocketFactory;
     }
 
     @Override
