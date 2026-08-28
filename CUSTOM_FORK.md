@@ -8,7 +8,7 @@ The custom branch is `custom-player`. The fork's `main` branch should remain clo
 
 ## Current stage
 
-**Stage:** v0.7.1 network-switch routing fix — validation reopened
+**Stage:** v0.7.1 network-switch routing fix — awaiting physical validation
 
 **Upstream baseline when the custom branch was created:** `bf26d7aae4378997c05712ae444af9d1b7235e42`
 
@@ -77,11 +77,13 @@ The request URL is never rewritten. HTTPS continues to use `dndkids.ddnsgeek.com
 
 This routing is intentionally limited to the player client. It does not modify Android DNS, Private DNS, DHCP, Wi-Fi configuration, router configuration, or Pocket Casts' feed/sync/login/artwork/discovery clients.
 
-### Open network-switch regression
+### Network-switch handling
 
-Initial cold-start validation succeeded, but a follow-up physical test found that when Pocket Cantrips remained open while the Pixel reconnected to home Wi-Fi, the next D&D episode could again take the slow public hairpin path. Force-stopping and relaunching the app while already on home Wi-Fi restored fast playback.
+Initial v0.7 cold-start validation succeeded, but a follow-up physical test found that when Pocket Cantrips remained open while the Pixel reconnected to home Wi-Fi, the next D&D episode could retain the slow public route until force-stop/relaunch.
 
-This strongly indicates the existing player OkHttp client can retain a connection/route selected on the previous network. v0.7.1 must invalidate the player connection pool when the active Android network changes so the scoped DNS selector is consulted again on the new network. Validation is not complete until the app can move from cellular/other Wi-Fi to the home Wi-Fi while remaining open and then start a fresh D&D episode promptly.
+v0.7.1 addresses that by giving the dedicated `@Player` OkHttp client its own connection pool and registering an Android default-network observer. When the established default network changes or is lost, only the player connection pool is evicted. The next player request must therefore acquire a fresh connection and re-run the scoped DNS decision on the new network. Active calls are not explicitly cancelled, and non-player OkHttp pools are not touched.
+
+PR #3 merged this fix to `custom-player` as commit `586fab8b866a582ca475b09f55895d5ef40a0693`. Physical validation is still required for the exact reconnect sequence before v0.7.1 is considered stable.
 
 ## Branding
 
@@ -156,7 +158,7 @@ If upstream substantially redesigns the player, adapt the custom Compose compone
 
 ## Validation status
 
-Cold-start validation succeeded on the target Android device. Network-switch validation failed: reconnecting to home Wi-Fi while the app remained open could retain the slow public route until force-stop/relaunch. v0.7 is therefore not considered stable yet.
+Cold-start validation succeeded on the target Android device. The network-switch regression is now fixed in source and merged, but the replacement build still requires physical validation for reconnecting to home Wi-Fi while the app remains open.
 
 ## Known limitations
 
@@ -166,8 +168,8 @@ Cold-start validation succeeded on the target Android device. Network-switch val
 
 ## Roadmap
 
-1. Make the player OkHttp routing react to active-network transitions while the app stays open.
-2. Build and install v0.7.1.
+1. Pass the v0.7.1 `debugProd` build gate.
+2. Install v0.7.1.
 3. Validate: launch off-LAN, reconnect to home Wi-Fi without force-stopping, then start a fresh D&D episode and confirm prompt startup.
 4. Re-test home cold start and off-LAN fallback.
 5. Mark v0.7.1 stable only after those physical tests pass.
