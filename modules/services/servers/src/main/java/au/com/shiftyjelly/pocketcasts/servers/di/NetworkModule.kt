@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import okhttp3.Cache
+import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -216,14 +217,21 @@ class NetworkModule {
         @Player interceptors: List<@JvmSuppressWildcards OkHttpInterceptor>,
     ): OkHttpClient {
         val homeLanDetector = GigachomperHomeLanDetector(context)
-
-        return client.newBuilder()
+        val playerConnectionPool = ConnectionPool()
+        val playerClient = client.newBuilder()
+            .connectionPool(playerConnectionPool)
             .dns(GigachomperPlaybackDns(homeLanDetector::isOnHomeLan))
             .addInterceptors(interceptors)
             .connectTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .build()
+
+        GigachomperPlaybackNetworkObserver(context) {
+            playerConnectionPool.evictAll()
+        }.start()
+
+        return playerClient
     }
 
     @Provides
