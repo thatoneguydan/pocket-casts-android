@@ -7,8 +7,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import java.net.InetAddress
-import java.net.Socket
-import javax.net.SocketFactory
 import okhttp3.Dns
 
 /**
@@ -57,8 +55,11 @@ internal class GigachomperPlaybackDns(
  * A long-lived Android process can temporarily retain a different default-network view while the
  * home Wi-Fi is already attached. Binding player sockets to the matching Network avoids depending
  * on that process/default-network timing.
+ *
+ * Public visibility is limited to Java interoperability for the adjacent dynamic socket factory;
+ * this remains an implementation detail of the servers module.
  */
-internal class GigachomperHomeLanDetector(context: Context) {
+class GigachomperHomeLanDetector(context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
 
@@ -80,47 +81,6 @@ internal class GigachomperHomeLanDetector(context: Context) {
             )
         }
     }
-}
-
-/**
- * Socket factory used only by the dedicated player OkHttp client.
- *
- * When the known home Wi-Fi Network is present, new player sockets are created by that Network's
- * socket factory so they are explicitly routed over Wi-Fi even if Android's process/default-network
- * selection has not caught up after a transition. Away from home, the original player socket
- * factory is used unchanged.
- */
-internal class GigachomperPlayerSocketFactory(
-    private val homeLanDetector: GigachomperHomeLanDetector,
-    private val fallbackSocketFactory: SocketFactory,
-) : SocketFactory() {
-    private fun currentSocketFactory(): SocketFactory {
-        return runCatching { homeLanDetector.homeNetwork()?.socketFactory }
-            .getOrNull()
-            ?: fallbackSocketFactory
-    }
-
-    override fun createSocket(): Socket = currentSocketFactory().createSocket()
-
-    override fun createSocket(host: String, port: Int): Socket =
-        currentSocketFactory().createSocket(host, port)
-
-    override fun createSocket(
-        host: String,
-        port: Int,
-        localHost: InetAddress,
-        localPort: Int,
-    ): Socket = currentSocketFactory().createSocket(host, port, localHost, localPort)
-
-    override fun createSocket(host: InetAddress, port: Int): Socket =
-        currentSocketFactory().createSocket(host, port)
-
-    override fun createSocket(
-        address: InetAddress,
-        port: Int,
-        localAddress: InetAddress,
-        localPort: Int,
-    ): Socket = currentSocketFactory().createSocket(address, port, localAddress, localPort)
 }
 
 /**
