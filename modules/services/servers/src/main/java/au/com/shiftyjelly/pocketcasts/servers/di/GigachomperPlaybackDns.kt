@@ -14,30 +14,24 @@ import okhttp3.Dns
  * known home LAN. The request URL and hostname stay unchanged, so HTTPS/SNI/certificate
  * verification continue to use dndkids.ddnsgeek.com.
  *
- * System DNS results are kept after the LAN address as a fail-safe. On the home network the
- * LAN socket wins immediately; elsewhere the normal resolver is used without modification.
+ * Diagnostic behavior: when the app believes it is on the known home LAN, return only the
+ * Gigachomper LAN address. Deliberately withholding the public address makes the physical result
+ * identify whether the detector entered the LAN override at all instead of silently falling back
+ * to the known-slow NAT-loopback path. Away from home, normal system DNS remains unchanged.
  */
 internal class GigachomperPlaybackDns(
     private val isOnHomeLan: () -> Boolean,
     private val fallbackDns: Dns = Dns.SYSTEM,
 ) : Dns {
     override fun lookup(hostname: String): List<InetAddress> {
-        val shouldPreferGigachomper = hostname.equals(PUBLIC_HOST, ignoreCase = true) &&
+        val shouldUseGigachomper = hostname.equals(PUBLIC_HOST, ignoreCase = true) &&
             runCatching(isOnHomeLan).getOrDefault(false)
 
-        if (!shouldPreferGigachomper) {
+        if (!shouldUseGigachomper) {
             return fallbackDns.lookup(hostname)
         }
 
-        val fallbackAddresses = fallbackDns.lookup(hostname)
-        return buildList {
-            add(LAN_ADDRESS)
-            fallbackAddresses.forEach { address ->
-                if (address != LAN_ADDRESS) {
-                    add(address)
-                }
-            }
-        }
+        return listOf(LAN_ADDRESS)
     }
 
     companion object {
