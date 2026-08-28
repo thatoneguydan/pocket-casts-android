@@ -2,9 +2,13 @@ package au.com.shiftyjelly.pocketcasts.servers.di
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import java.net.InetAddress
+import java.net.Socket
+import javax.net.SocketFactory
 import okhttp3.Dns
 
 /**
@@ -47,84 +51,114 @@ internal class GigachomperPlaybackDns(
 }
 
 /**
- * Identifies the home LAN without SSID/location access. The match is intentionally strict:
- * active transport must be Wi-Fi, the device must have a 192.168.1.x IPv4 address, and the
- * active network's default gateway must be the AT&T BGW320 at 192.168.1.254.
+ * Finds the actual Android Network representing the known home Wi-Fi LAN.
+ *
+ * This intentionally scans all currently connected networks instead of trusting activeNetwork.
+ * A long-lived Android process can temporarily retain a different default-network view while the
+ * home Wi-Fi is already attached. Binding player sockets to the matching Network avoids depending
+ * on that process/default-network timing.
  */
 internal class GigachomperHomeLanDetector(context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
 
-    fun isOnHomeLan(): Boolean {
-        val manager = connectivityManager ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        val linkProperties = manager.getLinkProperties(network) ?: return false
+    fun isOnHomeLan(): Boolean = homeNetwork() != null
 
-        return GigachomperHomeLanMatcher.matches(
-            isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
-            localAddresses = linkProperties.linkAddresses.map { it.address },
-            defaultGateways = linkProperties.routes
-                .filter { it.isDefaultRoute }
-                .mapNotNull { it.gateway },
-        )
+    fun homeNetwork(): Network? {
+        val manager = connectivityManager ?: return null
+
+        return manager.allNetworks.firstOrNull { network ->
+            val capabilities = manager.getNetworkCapabilities(network) ?: return@firstOrNull false
+            val linkProperties = manager.getLinkProperties(network) ?: return@firstOrNull false
+
+            GigachomperHomeLanMatcher.matches(
+                isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
+                localAddresses = linkProperties.linkAddresses.map { it.address },
+                defaultGateways = linkProperties.routes
+                    .filter { it.isDefaultRoute }
+                    .mapNotNull { it.gateway },
+            )
+        }
     }
 }
 
 /**
- * Watches Android's default-network identity for the lifetime of the singleton player client.
- * When the default network changes, callers invalidate only the player's connection pool so a
- * later request cannot reuse a route selected on the previous network.
+ * Socket factory used only by the dedicated player OkHttp client.
+ *
+ * When the known home Wi-Fi Network is present, new player sockets are created by that Network's
+ * socket factory so they are explicitly routed over Wi-Fi even if Android's process/default-network
+ * selection has not caught up after a transition. Away from home, the original player socket
+ * factory is used unchanged.
+ */
+internal class GigachomperPlayerSocketFactory(
+    private val homeLanDetector: GigachomperHomeLanDetector,
+    private val fallbackSocketFactory: SocketFactory,
+) : SocketFactory() {
+    private fun currentSocketFactory(): SocketFactory {
+        return runCatching { homeLanDetector.homeNetwork()?.socketFactory }
+            .getOrNull()
+            ?: fallbackSocketFactory
+    }
+
+    override fun createSocket(): Socket = currentSocketFactory().createSocket()
+
+    override fun createSocket(host: String, port: Int): Socket =
+        currentSocketFactory().createSocket(host, port)
+
+    override fun createSocket(
+        host: String,
+        port: Int,
+        localHost: InetAddress,
+        localPort: Int,
+    ): Socket = currentSocketFactory().createSocket(host, port, localHost, localPort)
+
+    override fun createSocket(host: InetAddress, port: Int): Socket =
+        currentSocketFactory().createSocket(host, port)
+
+    override fun createSocket(
+        address: InetAddress,
+        port: Int,
+        localAddress: InetAddress,
+        localPort: Int,
+    ): Socket = currentSocketFactory().createSocket(address, port, localAddress, localPort)
+}
+
+/**
+ * Watches Wi-Fi network state rather than only Android's default network. Every relevant Wi-Fi
+ * availability, loss, capability, or link-property change invalidates only the isolated player
+ * connection pool. The next player request then creates a fresh socket and re-evaluates both the
+ * home-LAN DNS preference and the matching Android Network binding.
  */
 internal class GigachomperPlaybackNetworkObserver(
     context: Context,
-    onDefaultNetworkChanged: () -> Unit,
+    private val onWifiNetworkChanged: () -> Unit,
 ) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-    private val transitionTracker = GigachomperDefaultNetworkTracker(onDefaultNetworkChanged)
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            transitionTracker.onAvailable(network.networkHandle)
+            onWifiNetworkChanged()
         }
 
         override fun onLost(network: Network) {
-            transitionTracker.onLost(network.networkHandle)
+            onWifiNetworkChanged()
+        }
+
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            onWifiNetworkChanged()
+        }
+
+        override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+            onWifiNetworkChanged()
         }
     }
 
     fun start() {
         runCatching {
-            connectivityManager?.registerDefaultNetworkCallback(callback)
-        }
-    }
-}
-
-/**
- * Pure state machine kept separate from Android callbacks so transition semantics stay unit-testable.
- * Initial network discovery is not considered a transition; moving away from an established default
- * network is.
- */
-internal class GigachomperDefaultNetworkTracker(
-    private val onDefaultNetworkChanged: () -> Unit,
-) {
-    private var currentNetworkHandle: Long? = null
-
-    @Synchronized
-    fun onAvailable(networkHandle: Long) {
-        val previousHandle = currentNetworkHandle
-        currentNetworkHandle = networkHandle
-
-        if (previousHandle != null && previousHandle != networkHandle) {
-            onDefaultNetworkChanged()
-        }
-    }
-
-    @Synchronized
-    fun onLost(networkHandle: Long) {
-        if (currentNetworkHandle == networkHandle) {
-            currentNetworkHandle = null
-            onDefaultNetworkChanged()
+            val request = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .build()
+            connectivityManager?.registerNetworkCallback(request, callback)
         }
     }
 }
