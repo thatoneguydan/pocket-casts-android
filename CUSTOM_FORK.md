@@ -8,7 +8,7 @@ The custom branch is `custom-player`. The fork's `main` branch should remain clo
 
 ## Current stage
 
-**Stage:** v0.7 stable — home-LAN D&D playback routing physically validated
+**Stage:** v0.7.1 network-switch routing fix — validation reopened
 
 **Upstream baseline when the custom branch was created:** `bf26d7aae4378997c05712ae444af9d1b7235e42`
 
@@ -76,6 +76,12 @@ Pocket Cantrips therefore applies one narrow DNS preference to the dedicated `@P
 The request URL is never rewritten. HTTPS continues to use `dndkids.ddnsgeek.com` for SNI and certificate verification. The public/system DNS result remains available behind the LAN address as a fail-safe. Away from the matched home LAN, and for every other hostname, the player client uses ordinary system DNS only.
 
 This routing is intentionally limited to the player client. It does not modify Android DNS, Private DNS, DHCP, Wi-Fi configuration, router configuration, or Pocket Casts' feed/sync/login/artwork/discovery clients.
+
+### Open network-switch regression
+
+Initial cold-start validation succeeded, but a follow-up physical test found that when Pocket Cantrips remained open while the Pixel reconnected to home Wi-Fi, the next D&D episode could again take the slow public hairpin path. Force-stopping and relaunching the app while already on home Wi-Fi restored fast playback.
+
+This strongly indicates the existing player OkHttp client can retain a connection/route selected on the previous network. v0.7.1 must invalidate the player connection pool when the active Android network changes so the scoped DNS selector is consulted again on the new network. Validation is not complete until the app can move from cellular/other Wi-Fi to the home Wi-Fi while remaining open and then start a fresh D&D episode promptly.
 
 ## Branding
 
@@ -150,23 +156,18 @@ If upstream substantially redesigns the player, adapt the custom Compose compone
 
 ## Validation status
 
-v0.7 is physically validated on the target Android device as of 2026-08-28. The user reported the installed build works correctly, including the home-LAN playback-delay fix, with no regressions reported during validation.
-
-Validated contract:
-
-- App installs and launches normally.
-- Existing Pocket Cantrips player controls remain functional.
-- Fresh D&D playback on the known home LAN no longer pays the measured ~15 second public hairpin connection delay.
-- The scoped resolver preserves the public HTTPS hostname and normal TLS validation.
-- Routing remains confined to the dedicated player client and exact D&D hostname.
-- Normal Android/system DNS remains the fallback away from the matched home LAN.
+Cold-start validation succeeded on the target Android device. Network-switch validation failed: reconnecting to home Wi-Fi while the app remained open could retain the slow public route until force-stop/relaunch. v0.7 is therefore not considered stable yet.
 
 ## Known limitations
 
 - Adaptive layout still suppresses the custom effects block below 600dp screen height.
-- The v0.7 LAN route is intentionally tied to the known home network fingerprint (`Wi-Fi + 192.168.1.x + gateway 192.168.1.254`) and the exact D&D hostname.
+- The LAN route is intentionally tied to the known home network fingerprint (`Wi-Fi + 192.168.1.x + gateway 192.168.1.254`) and the exact D&D hostname.
 - The current icon fix intentionally reuses Pocket Casts' production launcher art; a distinct Pocket Cantrips icon can be designed later if desired.
 
 ## Roadmap
 
-v0.7 validation is complete. Continue the normal upstream-sync process for future Pocket Casts updates and preserve the scoped LAN-routing contract when touching player networking.
+1. Make the player OkHttp routing react to active-network transitions while the app stays open.
+2. Build and install v0.7.1.
+3. Validate: launch off-LAN, reconnect to home Wi-Fi without force-stopping, then start a fresh D&D episode and confirm prompt startup.
+4. Re-test home cold start and off-LAN fallback.
+5. Mark v0.7.1 stable only after those physical tests pass.
