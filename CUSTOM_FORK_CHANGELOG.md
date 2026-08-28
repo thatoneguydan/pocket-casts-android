@@ -1,5 +1,35 @@
 # Pocket Cantrips Changelog
 
+## v0.7-dev — 2026-08-28
+
+Networking pass for the private D&D podcast host after reproducing a home-LAN NAT-loopback delay on the AT&T BGW320 gateway.
+
+### Fixed
+
+- Fresh D&D episode playback no longer has to hairpin through the public WAN address while the phone is on the known home Wi-Fi LAN.
+- The dedicated Pocket Casts player OkHttp client now prefers Gigachomper at `192.168.1.250` only for `dndkids.ddnsgeek.com` when Android reports Wi-Fi on `192.168.1.x` with default gateway `192.168.1.254`.
+- The original `https://dndkids.ddnsgeek.com/...` URL remains unchanged, preserving normal TLS hostname/SNI/certificate validation.
+- System DNS results remain behind the LAN address as a fail-safe, and system DNS remains the only behavior away from the matched home LAN or for every other hostname.
+
+### Measured basis
+
+- Repeated public/hairpin connections to `76.222.77.191` spent about 15 seconds establishing TCP.
+- The same HTTPS hostname forced directly to Gigachomper completed in roughly 6-24 ms.
+- Public DNS returned only an IPv4 A record, ruling out IPv6 fallback as the cause.
+
+### Preserved
+
+- Android DNS, DHCP, Private DNS, and Wi-Fi settings are unchanged.
+- No router configuration changes are required.
+- Feed, sync, login, artwork, discovery, download, and other non-player OkHttp clients are unchanged.
+- No URL rewriting, cleartext downgrade, certificate bypass, or custom trust behavior is introduced.
+- Existing player UI, playback effects, persistence, and transport behavior are unchanged.
+
+### Validation status
+
+- DNS routing logic has unit coverage for home-LAN preference, off-LAN fallback, unrelated hosts, detector failure fallback, and home-network matching.
+- Repository compile/build gate and physical-device playback validation are required before treating v0.7 as stable.
+
 ## v0.6-dev — 2026-08-15
 
 Physical-device hierarchy pass focused on making the always-visible playback effects read as secondary controls beneath the primary transport controls.
