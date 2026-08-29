@@ -9,7 +9,7 @@ import org.junit.Test
 
 class GigachomperPlaybackDnsTest {
     @Test
-    fun `D&D host prefers Gigachomper and keeps system fallback on home LAN`() {
+    fun `D&D host uses only Gigachomper on confirmed home LAN`() {
         val publicAddress = ipv4(76, 222, 77, 191)
         val fallback = RecordingDns(listOf(publicAddress))
         val dns = GigachomperPlaybackDns(
@@ -19,8 +19,8 @@ class GigachomperPlaybackDnsTest {
 
         val result = dns.lookup("dndkids.ddnsgeek.com")
 
-        assertEquals(listOf(GigachomperPlaybackDns.LAN_ADDRESS, publicAddress), result)
-        assertEquals(listOf("dndkids.ddnsgeek.com"), fallback.lookups)
+        assertEquals(listOf(GigachomperPlaybackDns.LAN_ADDRESS), result)
+        assertTrue(fallback.lookups.isEmpty())
     }
 
     @Test
@@ -65,6 +65,7 @@ class GigachomperPlaybackDnsTest {
         val result = dns.lookup("dndkids.ddnsgeek.com")
 
         assertEquals(listOf(publicAddress), result)
+        assertEquals(listOf("dndkids.ddnsgeek.com"), fallback.lookups)
     }
 
     @Test
