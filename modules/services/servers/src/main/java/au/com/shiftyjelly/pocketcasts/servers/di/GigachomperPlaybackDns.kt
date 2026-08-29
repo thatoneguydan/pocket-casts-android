@@ -7,6 +7,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import okhttp3.Dns
 
 /**
@@ -14,10 +15,9 @@ import okhttp3.Dns
  * known home LAN. The request URL and hostname stay unchanged, so HTTPS/SNI/certificate
  * verification continue to use dndkids.ddnsgeek.com.
  *
- * Diagnostic behavior: when the app believes it is on the known home LAN, return only the
- * Gigachomper LAN address. Deliberately withholding the public address makes the physical result
- * identify whether the detector entered the LAN override at all instead of silently falling back
- * to the known-slow NAT-loopback path. Away from home, normal system DNS remains unchanged.
+ * When home Wi-Fi is confirmed, only the Gigachomper LAN address is returned. Away from home,
+ * normal system DNS remains unchanged. Keeping the two paths exclusive prevents the known-slow
+ * BGW320 NAT-loopback address from winning a player connection while the phone is at home.
  */
 internal class GigachomperPlaybackDns(
     private val isOnHomeLan: () -> Boolean,
@@ -46,9 +46,14 @@ internal class GigachomperPlaybackDns(
  * Finds the actual Android Network representing the known home Wi-Fi LAN.
  *
  * A long-lived Android process can temporarily retain a stale default-network view after moving
- * between cellular and Wi-Fi. The Wi-Fi callback therefore records every matching Network while
- * activeNetwork remains an immediate cold-start fallback. Player sockets can then bind to the
- * actual home Wi-Fi Network without relying on deprecated all-network enumeration.
+ * between cellular and Wi-Fi. The Wi-Fi callback therefore records every attached Wi-Fi Network
+ * while activeNetwork remains an immediate cold-start fallback.
+ *
+ * Android can report a newly available Wi-Fi Network before its complete LinkProperties/default
+ * route are visible. The strict subnet + BGW320-gateway fingerprint remains the fast path, but a
+ * short network-bound TCP probe to Gigachomper confirms home Wi-Fi during that transition window.
+ * This avoids a false negative that would otherwise send the first player request through the
+ * approximately 15-second public NAT-loopback path.
  *
  * Public visibility is limited to Java interoperability for the adjacent dynamic socket factory;
  * this remains an implementation detail of the servers module.
@@ -71,16 +76,61 @@ class GigachomperHomeLanDetector(context: Context) {
 
         return candidates.firstOrNull { network ->
             val capabilities = manager.getNetworkCapabilities(network) ?: return@firstOrNull false
-            val linkProperties = manager.getLinkProperties(network) ?: return@firstOrNull false
+            if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return@firstOrNull false
+            }
 
-            GigachomperHomeLanMatcher.matches(
-                isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
-                localAddresses = linkProperties.linkAddresses.map { it.address },
-                defaultGateways = linkProperties.routes
-                    .filter { it.isDefaultRoute }
-                    .mapNotNull { it.gateway },
-            )
+            val linkProperties = manager.getLinkProperties(network)
+            val fingerprintMatches = linkProperties?.let { properties ->
+                GigachomperHomeLanMatcher.matches(
+                    isWifi = true,
+                    localAddresses = properties.linkAddresses.map { it.address },
+                    defaultGateways = properties.routes
+                        .filter { it.isDefaultRoute }
+                        .mapNotNull { it.gateway },
+                )
+            } == true
+
+            fingerprintMatches || GigachomperHomeLanProbe.canReachGigachomper(network)
         }
+    }
+}
+
+/**
+ * Confirms Gigachomper through one specific Android Network without changing process-wide routing.
+ *
+ * This is only a transition fallback after Android has already identified the candidate as Wi-Fi.
+ * The probe is intentionally short and targets only Gigachomper's HTTPS port. The real media
+ * request still performs normal HTTPS hostname and certificate validation.
+ */
+internal object GigachomperHomeLanProbe {
+    private const val HTTPS_PORT = 443
+    private const val CONNECT_TIMEOUT_MS = 175
+    private const val RETRY_DELAY_MS = 50L
+    private const val ATTEMPTS = 3
+
+    fun canReachGigachomper(network: Network): Boolean {
+        repeat(ATTEMPTS) { attempt ->
+            val connected = runCatching {
+                network.socketFactory.createSocket().use { socket ->
+                    socket.connect(
+                        InetSocketAddress(GigachomperPlaybackDns.LAN_ADDRESS, HTTPS_PORT),
+                        CONNECT_TIMEOUT_MS,
+                    )
+                    socket.isConnected
+                }
+            }.getOrDefault(false)
+
+            if (connected) {
+                return true
+            }
+
+            if (attempt < ATTEMPTS - 1) {
+                runCatching { Thread.sleep(RETRY_DELAY_MS) }
+            }
+        }
+
+        return false
     }
 }
 
