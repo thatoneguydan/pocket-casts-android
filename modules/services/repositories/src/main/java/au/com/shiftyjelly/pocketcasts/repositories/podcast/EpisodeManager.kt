@@ -24,9 +24,6 @@ interface EpisodeManager {
     suspend fun findByUuid(uuid: String): PodcastEpisode?
     suspend fun findByUuids(uuids: Collection<String>): List<PodcastEpisode>
 
-    @Deprecated("Use findByUuid suspended function instead")
-    fun findByUuidRxMaybe(uuid: String): Maybe<PodcastEpisode>
-
     fun findByUuidFlow(uuid: String): Flow<PodcastEpisode>
     fun findEpisodeByUuidRxFlowable(uuid: String): Flowable<BaseEpisode>
     fun findEpisodeByUuidFlow(uuid: String): Flow<BaseEpisode>
@@ -46,8 +43,8 @@ interface EpisodeManager {
     fun findEpisodesForHistorySyncBlocking(): List<PodcastEpisode>
 
     fun findDownloadEpisodesFlow(): Flow<List<PodcastEpisode>>
-    fun findDownloadedEpisodesRxFlowable(): Flowable<List<PodcastEpisode>>
-    fun findStarredEpisodesFlow(): Flow<List<PodcastEpisode>>
+    fun findDownloadedEpisodesFlow(): Flow<List<PodcastEpisode>>
+    fun findStarredEpisodesFlow(limit: Int = Int.MAX_VALUE): Flow<List<PodcastEpisode>>
     suspend fun findStarredEpisodes(): List<PodcastEpisode>
     suspend fun downloadedEpisodesThatHaveNotBeenPlayedCount(): Int
 
@@ -117,7 +114,6 @@ interface EpisodeManager {
     fun markAsUnplayed(episodes: List<BaseEpisode>)
     suspend fun findEpisodeByUuid(uuid: String): BaseEpisode?
     suspend fun findEpisodesByUuids(uuids: List<String>): List<BaseEpisode>
-    fun findDownloadingEpisodesRxFlowable(): Flowable<List<BaseEpisode>>
     suspend fun updatePlaybackInteractionDate(episode: BaseEpisode?)
     suspend fun updatePlaybackInteraction(episodeUuid: String, interactionDate: Long, syncStatus: Long)
     suspend fun findStaleDownloads(): List<PodcastEpisode>
