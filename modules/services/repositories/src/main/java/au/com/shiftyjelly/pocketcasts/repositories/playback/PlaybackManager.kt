@@ -101,7 +101,6 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Completable
-import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -138,8 +137,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.rx2.asFlow
 import kotlinx.coroutines.rx2.asFlowable
-import kotlinx.coroutines.rx2.await
-import kotlinx.coroutines.rx2.awaitSingleOrNull
 import kotlinx.coroutines.rx2.rxCompletable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -177,6 +174,7 @@ open class PlaybackManager @Inject constructor(
     private val browseTreeProvider: BrowseTreeProvider,
     private val alternateEnclosureManager: AlternateEnclosureManager,
     private val generatedChapterSeeker: Lazy<GeneratedChapterSeeker>,
+    private val playbackServiceErrorReporter: PlaybackServiceErrorReporter,
 ) : FocusManager.FocusChangeListener,
     AudioNoisyManager.AudioBecomingNoisyListener,
     CoroutineScope {
@@ -258,6 +256,7 @@ open class PlaybackManager @Inject constructor(
         settings = settings,
         context = application,
         eventHorizon = eventHorizon,
+        errorReporter = playbackServiceErrorReporter,
         bookmarkManager = bookmarkManager,
         browseTreeProvider = browseTreeProvider,
         applicationScope = applicationScope,
@@ -268,6 +267,13 @@ open class PlaybackManager @Inject constructor(
 
     private val _playerFlow = MutableStateFlow<Player?>(null)
     val playerFlow = _playerFlow.asStateFlow()
+
+    private val _videoSurfaceState = MutableStateFlow(VideoSurfaceState.NONE)
+    val videoSurfaceState = _videoSurfaceState.asStateFlow()
+
+    fun setVideoSurfaceState(state: VideoSurfaceState) {
+        _videoSurfaceState.value = state
+    }
 
     // HLS starts Unknown until the player's tracks resolve it to HasVideo or AudioOnly; the video
     // surface is shown only once HasVideo is known.
@@ -284,7 +290,9 @@ open class PlaybackManager @Inject constructor(
     private var videoStreamPreferredEpisodeUuid: String? = null
     private val isVideoToggleReloading = AtomicBoolean(false)
 
-    private var lastPlaybackSource: SourceView? = null
+    @Volatile
+    var lastPlaybackSource: SourceView? = null
+        private set
 
     private class PendingContentTypeEvent(
         val episodeUuid: String,
@@ -643,6 +651,25 @@ open class PlaybackManager @Inject constructor(
         }
     }
 
+    /**
+     * Plays the queue only if playback isn't already running, unlike the [playPause] toggle.
+     * Used for KEYCODE_MEDIA_PLAY, which has explicit play semantics: some head units
+     * (wireless Android Auto in particular) send it redundantly while playback is already
+     * running, and toggling would pause playback. Media-button callbacks invoke it immediately
+     * instead of waiting for multi-tap disambiguation.
+     */
+    fun playIfNotPlaying(sourceView: SourceView = SourceView.UNKNOWN) {
+        if (isPlaying()) {
+            LogBuffer.i(LogBuffer.TAG_PLAYBACK, "Ignoring play request because playback is already playing")
+        } else {
+            LogBuffer.i(
+                LogBuffer.TAG_PLAYBACK,
+                "Explicit play request from source=$sourceView",
+            )
+            playQueue(sourceView)
+        }
+    }
+
     fun playQueue(
         sourceView: SourceView = SourceView.UNKNOWN,
         showedStreamWarning: Boolean = false,
@@ -785,7 +812,9 @@ open class PlaybackManager @Inject constructor(
         SourceView.ABOUT,
         SourceView.APPEARANCE,
         SourceView.STORAGE_AND_DATA_USAGE,
+        SourceView.HEADPHONES,
         SourceView.NOTIFICATION_BOOKMARK,
+        SourceView.TRANSCRIPT,
         SourceView.METERED_NETWORK_CHANGE,
         SourceView.WIDGET_PLAYER_SMALL,
         SourceView.WIDGET_PLAYER_MEDIUM,
@@ -1160,7 +1189,7 @@ open class PlaybackManager @Inject constructor(
 
     fun skipForward(
         sourceView: SourceView = SourceView.UNKNOWN,
-        jumpAmountSeconds: Int = settings.skipForwardInSecs.value,
+        jumpAmountSeconds: Int? = null,
     ) {
         launch {
             skipForwardSuspend(sourceView, jumpAmountSeconds)
@@ -1169,13 +1198,13 @@ open class PlaybackManager @Inject constructor(
 
     suspend fun skipForwardSuspend(
         sourceView: SourceView = SourceView.UNKNOWN,
-        jumpAmountSeconds: Int = settings.skipForwardInSecs.value,
+        jumpAmountSeconds: Int? = null,
     ) {
         LogBuffer.i(LogBuffer.TAG_PLAYBACK, "Skip forward tapped")
 
         cancelPendingChapterSeek()
         val episode = getCurrentEpisode() ?: return
-        val jumpAmountMs = jumpAmountSeconds * 1000
+        val jumpAmountMs = (jumpAmountSeconds ?: settings.skipForwardInSecs.value) * 1000
 
         val currentTimeMs = getCurrentTimeMs(episode = episode)
         if (currentTimeMs < 0 || player?.episodeUuid != episode.uuid) return // Make sure the player hasn't changed episodes before using the current time to seek
@@ -1199,19 +1228,19 @@ open class PlaybackManager @Inject constructor(
         }
     }
 
-    fun skipBackward(sourceView: SourceView = SourceView.UNKNOWN, jumpAmountSeconds: Int = settings.skipBackInSecs.value) {
+    fun skipBackward(sourceView: SourceView = SourceView.UNKNOWN, jumpAmountSeconds: Int? = null) {
         launch {
             skipBackwardSuspend(sourceView, jumpAmountSeconds)
         }
     }
 
-    suspend fun skipBackwardSuspend(sourceView: SourceView = SourceView.UNKNOWN, jumpAmountSeconds: Int = settings.skipBackInSecs.value) {
+    suspend fun skipBackwardSuspend(sourceView: SourceView = SourceView.UNKNOWN, jumpAmountSeconds: Int? = null) {
         LogBuffer.i(LogBuffer.TAG_PLAYBACK, "Skip backward tapped")
 
         cancelPendingChapterSeek()
         val episode = getCurrentEpisode() ?: return
 
-        val jumpAmountMs = jumpAmountSeconds * 1000
+        val jumpAmountMs = (jumpAmountSeconds ?: settings.skipBackInSecs.value) * 1000
         val currentTimeMs = getCurrentTimeMs(episode = episode)
         if (currentTimeMs < 0) return
 
@@ -1766,14 +1795,19 @@ open class PlaybackManager @Inject constructor(
                         .subscribe()
                 } else if (episode is UserEpisode) {
                     userEpisodeManager.findEpisodeByUuid(episode.uuid)?.let { userEpisode ->
-                        syncManager.postFilesRxSingle(listOf(userEpisode.toServerPostFile()))
-                            .ignoreElement()
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .doOnComplete { Timber.d("Synced user episode completion") }
-                            .doOnError { Timber.e("Could not sync user episode completion ${it.message}") }
-                            .onErrorComplete()
-                            .subscribe()
+                        // Fire and forget so completion handling does not wait on the network before auto play
+                        applicationScope.launch(Dispatchers.IO) {
+                            try {
+                                val response = syncManager.postFiles(listOf(userEpisode.toServerPostFile()))
+                                if (response.isSuccessful) {
+                                    Timber.d("Synced user episode completion")
+                                } else {
+                                    Timber.e("Could not sync user episode completion ${response.code()}")
+                                }
+                            } catch (e: Exception) {
+                                Timber.e("Could not sync user episode completion ${e.message}")
+                            }
+                        }
                     }
                 }
             }
@@ -1803,7 +1837,7 @@ open class PlaybackManager @Inject constructor(
         return when (Util.getAppPlatform(application)) {
             AppPlatform.Automotive -> episodeWithSource?.first ?: episodeManager.findLatestEpisodeToPlayBlocking()
 
-            AppPlatform.WearOs -> episodeWithSource?.first
+            AppPlatform.WearOs, AppPlatform.Tv -> episodeWithSource?.first
 
             AppPlatform.Phone -> {
                 if (episodeWithSource != null) {
@@ -2092,15 +2126,12 @@ open class PlaybackManager @Inject constructor(
             }
 
             is UserEpisode -> {
-                userEpisodeManager.findEpisodeByUuidRxMaybe(currentUpNextEpisode.uuid)
-                    .flatMap {
-                        if (it.serverStatus == UserEpisodeServerStatus.MISSING) {
-                            userEpisodeManager.downloadMissingUserEpisodeRxMaybe(currentUpNextEpisode.uuid, placeholderTitle = currentUpNextEpisode.title, placeholderPublished = null)
-                        } else {
-                            Maybe.just(it)
-                        }
-                    }
-                    .awaitSingleOrNull()
+                val userEpisode = userEpisodeManager.findEpisodeByUuid(currentUpNextEpisode.uuid)
+                if (userEpisode?.serverStatus == UserEpisodeServerStatus.MISSING) {
+                    userEpisodeManager.downloadMissingUserEpisode(currentUpNextEpisode.uuid, placeholderTitle = currentUpNextEpisode.title, placeholderPublished = null)
+                } else {
+                    userEpisode
+                }
             }
 
             else -> {
@@ -2145,14 +2176,7 @@ open class PlaybackManager @Inject constructor(
 
             is UserEpisode -> {
                 if (episode.serverStatus == UserEpisodeServerStatus.UPLOADED) {
-                    try {
-                        val newDownloadUrl = userEpisodeManager.getPlaybackUrlRxSingle(episode).await()
-                        episode.downloadUrl = newDownloadUrl
-                    } catch (e: Exception) {
-                        onPlayerError(PlayerEvent.PlayerError("Could not load cloud file ${e.message}"))
-                        removeEpisode(episode, source = sourceView)
-                        return
-                    }
+                    episode.downloadUrl = userEpisodeManager.getPlaybackUrl(episode)
                 }
             }
         }
@@ -2471,6 +2495,10 @@ open class PlaybackManager @Inject constructor(
             return
         }
 
+        // Set before the relay emits playing
+        lastPlaybackSource = sourceView
+        playbackServiceErrorReporter.resetFailureCount()
+
         cancelPauseTimer()
         setupBufferUpdateTimer(episode)
 
@@ -2523,7 +2551,6 @@ open class PlaybackManager @Inject constructor(
 
         sleepTimer.restartSleepTimerIfApplies(currentEpisodeUuid = episode.uuid)
 
-        lastPlaybackSource = sourceView
         trackPlaybackPlay(sourceView, episode)
     }
 

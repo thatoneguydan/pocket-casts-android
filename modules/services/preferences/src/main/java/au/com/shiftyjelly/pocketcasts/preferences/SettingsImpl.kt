@@ -47,7 +47,6 @@ import au.com.shiftyjelly.pocketcasts.utils.config.FirebaseConfig
 import au.com.shiftyjelly.pocketcasts.utils.extensions.getString
 import au.com.shiftyjelly.pocketcasts.utils.extensions.splitIgnoreEmpty
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
-import com.jakewharton.rxrelay2.BehaviorRelay
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.nio.charset.Charset
@@ -115,8 +114,8 @@ class SettingsImpl @Inject constructor(
 
     override val sessionIds get() = sessionIdsSetting.value
 
-    override val selectPodcastSortTypeObservable = BehaviorRelay.create<PodcastsSortType>().apply { accept(getSelectPodcastsSortType()) }
-    override val multiSelectItemsObservable = BehaviorRelay.create<List<String>>().apply { accept(getMultiSelectItems()) }
+    override val selectPodcastSortTypeFlow = MutableStateFlow(getSelectPodcastsSortType())
+    override val multiSelectItemsFlow = MutableStateFlow(getMultiSelectItems())
 
     override val shelfItems = UserSetting.PrefFromString(
         sharedPrefKey = "shelfItems",
@@ -261,7 +260,7 @@ class SettingsImpl @Inject constructor(
             putString(Settings.PREFERENCE_SELECT_PODCAST_LIBRARY_SORT, sortType.clientId.toString())
             apply()
         }
-        selectPodcastSortTypeObservable.accept(sortType)
+        selectPodcastSortTypeFlow.value = sortType
     }
 
     override fun getSelectPodcastsSortType(): PodcastsSortType {
@@ -1078,6 +1077,7 @@ class SettingsImpl @Inject constructor(
 
             AppPlatform.Phone,
             AppPlatform.WearOs,
+            AppPlatform.Tv,
             -> false
         },
         sharedPrefs = sharedPreferences,
@@ -1340,7 +1340,7 @@ class SettingsImpl @Inject constructor(
 
     override fun setMultiSelectItems(items: List<String>) {
         setStringList("multi_select_items", items)
-        multiSelectItemsObservable.accept(items)
+        multiSelectItemsFlow.value = items
     }
 
     override val autoAddUpNextLimit = UserSetting.IntPref(
@@ -1404,7 +1404,7 @@ class SettingsImpl @Inject constructor(
         setInt(SHOWN_BATTERY_WARNING_KEY, max(0, value))
     }
 
-    override fun getTimesToShowBatteryWarning(): Int = getInt(SHOWN_BATTERY_WARNING_KEY, 4)
+    override fun getTimesToShowBatteryWarning(): Int = getInt(SHOWN_BATTERY_WARNING_KEY, 3)
 
     override val collectAnalytics = UserSetting.BoolPref(
         sharedPrefKey = "SendUsageStatsKey",
@@ -1608,6 +1608,19 @@ class SettingsImpl @Inject constructor(
         sharedPrefs = sharedPreferences,
     )
 
+    override val showSmartBookmarksTooltip: UserSetting<Boolean> = UserSetting.BoolPref(
+        sharedPrefKey = Settings.SHOW_SMART_BOOKMARKS_TOOLTIP,
+        // Defaults to false so fresh installs never see the tooltip, VersionMigrationsWorker enables it for upgrading users.
+        defaultValue = false,
+        sharedPrefs = sharedPreferences,
+    )
+
+    override val smartBookmarksTooltipDismissed: UserSetting<Boolean> = UserSetting.BoolPref(
+        sharedPrefKey = Settings.SMART_BOOKMARKS_TOOLTIP_DISMISSED,
+        defaultValue = false,
+        sharedPrefs = sharedPreferences,
+    )
+
     override val showUpNextSortDurationTooltip: UserSetting<Boolean> = UserSetting.BoolPref(
         sharedPrefKey = Settings.SHOW_UP_NEXT_SORT_DURATION_TOOLTIP,
         // Defaults to false so fresh installs never see the tooltip, VersionMigrationsWorker enables it for upgrading users.
@@ -1705,9 +1718,11 @@ class SettingsImpl @Inject constructor(
         sharedPrefs = sharedPreferences,
     )
 
-    override val showFreeAccountEncouragement = UserSetting.BoolPref(
-        sharedPrefKey = "show_free_account_encouragement",
-        defaultValue = true,
+    override val freeAccountEncouragementLastShown = UserSetting.PrefFromString<Instant?>(
+        sharedPrefKey = "free_account_encouragement_last_shown",
+        defaultValue = null,
+        fromString = { value -> runCatching { Instant.parse(value) }.getOrNull() },
+        toString = { value -> value.toString() },
         sharedPrefs = sharedPreferences,
     )
 
