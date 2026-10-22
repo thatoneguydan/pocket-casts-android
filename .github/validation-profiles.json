@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "repository": "thatoneguydan/pocket-casts-android",
+  "canonicalRef": "custom-player",
+  "implementation": {
+    "repository": "thatoneguydan/DevelopmentInfrastructure",
+    "path": "Shared/Validation/validation-reuse.mjs",
+    "sha256": "0eb37b20a43c43c75a846e22fb33a398e9562fc6827c63f2a12edce352eae104"
+  },
+  "profiles": {
+    "custom-player-build-build": {
+      "workflow": "custom-player-build.yml",
+      "steps": [
+        "Set up Java 21",
+        "Set up Android SDK",
+        "Install Android 17 SDK",
+        "Set up Gradle cache",
+        "Build debugProd APK",
+        "Upload installable APK"
+      ],
+      "tools": [
+        "powershell"
+      ],
+      "buildSteps": 1,
+      "alwaysCurrent": [
+        "Exact-source APK generation and original artifact eligibility"
+      ],
+      "artifacts": [],
+      "deliversPackage": true,
+      "job": "build",
+      "documentation": [
+        "AGENTS.md",
+        "PROJECT.md",
+        "HANDOFF.md",
+        "ROADMAP.md",
+        "docs/handoff/**",
+        "CUSTOM_FORK.md",
+        "CUSTOM_FORK_CHANGELOG.md"
+      ]
+    }
+  }
+}

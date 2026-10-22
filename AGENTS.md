@@ -1,5 +1,10 @@
 # AGENTS.md
 
+## Source validation and continuation
+
+Use `.github/validation-profiles.json` and the owning workflow's **Plan affected source validation** step. The shared implementation is pinned to DevelopmentInfrastructure's `Shared/Validation/validation-reuse.mjs`. Run focused changed-behavior checks during iteration; accept the workflow's execute/reuse decision for final source proof. Inspect the existing run/attempt and cited executed job before retrying. Failed, missing, expired or unobservable evidence executes the affected checks. Do not replay a full suite solely for a merge, channel move or new chat. Package delivery, live diagnostics, protected admission, rollback and user apply authority remain on their existing current routes. Keep the active issue body current; shared operating rules are in DevelopmentInfrastructure.
+
+
 This file provides guidance to AI coding assistants (Claude Code, Cursor, Windsurf, etc.) when working with code in this repository.
 
 ## Common Commands
@@ -129,6 +134,8 @@ Core Services (model, servers)
 ## Development Guidelines
 
 ### Git Workflow
+
+For this personal Pocket Cantrips fork, canonical source is `custom-player`: branch directly from that ref and target it in PRs. Keep upstream-tracking `main` clean. The following upstream contribution/release rules apply when contributing upstream.
 
 **Develop feature work on a branch off `main`. The only reason to branch off a release branch is to cherry-pick an already-merged commit into that release.**
 
