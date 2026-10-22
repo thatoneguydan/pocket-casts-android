@@ -123,7 +123,7 @@ PR #3 merged this fix to `custom-player` as commit `586fab8b866a582ca475b09f5589
 
 ## Build automation
 
-Every push to `custom-player` runs the **Build Pocket Cantrips APK** GitHub Actions workflow.
+The **Build Pocket Cantrips APK** workflow owns exact-source `debugProd` packages on the repository-scoped Glass runner. Declared documentation changes execute routing fixtures without building an APK; draft PRs stay skipped until runner commissioning. Ready same-repository PRs prove the Windows candidate, and canonical `custom-player` pushes retain exact-source package production. Upstream-only Claude, Slack, Buildkite and dependency-submission workflows are disabled in this personal fork. Gradle wrapper validation remains mandatory inside the APK route; no hosted runner or device installation is implied.
 
 The workflow builds Pocket Casts' `debugProd` variant and uploads the APK as:
 

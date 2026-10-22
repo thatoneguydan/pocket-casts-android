@@ -1,3 +1,4 @@
+# Personal fork: upstream-only automation stays disabled; custom-player owns build/proof.
 name: Submit dependencies to GitHub Dependency Graph
 on:
   push:
@@ -8,6 +9,8 @@ permissions:
   contents: write
 jobs:
   build:
+    if: >-
+      github.repository == 'Automattic/pocket-casts-android'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

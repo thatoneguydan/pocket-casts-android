@@ -1,3 +1,4 @@
+# Personal fork: upstream-only automation stays disabled; custom-player owns build/proof.
 name: ☢️ Trigger Danger On Buildkite
 
 on:
@@ -6,7 +7,8 @@ on:
 
 jobs:
   dangermattic:
-    if: ${{ (github.event.pull_request.draft == false) }}
+    if: >-
+      github.repository == 'Automattic/pocket-casts-android' && ((github.event.pull_request.draft == false))
     uses: Automattic/dangermattic/.github/workflows/reusable-retry-buildkite-step-on-events.yml@v1
     with:
       org-slug: automattic
