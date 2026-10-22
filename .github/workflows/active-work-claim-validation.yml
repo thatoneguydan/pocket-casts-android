@@ -1,7 +1,8 @@
 name: Active Work Claim Validation
 
 on:
-  pull_request_target:
+  pull_request:
+    branches: [custom-player]
     types: [opened, edited, synchronize, reopened, ready_for_review]
   push:
     branches: [custom-player]
@@ -21,7 +22,7 @@ concurrency:
 jobs:
   validate-active-work-claim:
     name: Validate active-work ownership
-    if: github.event_name != 'pull_request_target' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, Windows, X64, glass-builder]
     timeout-minutes: 10
     env:
@@ -81,7 +82,7 @@ jobs:
             return @($files | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_ } | Sort-Object -Unique)
           }
 
-          $body = if ($env:EVENT_NAME -eq 'pull_request_target') {
+          $body = if ($env:EVENT_NAME -eq 'pull_request') {
             [string]$env:PR_BODY
           }
           else {
@@ -104,7 +105,7 @@ jobs:
             throw 'Active-Work must point to thatoneguydan/DevelopmentInfrastructure#<issue-number>.'
           }
 
-          if ($env:EVENT_NAME -ne 'pull_request_target') {
+          if ($env:EVENT_NAME -ne 'pull_request') {
             Write-Host 'Active-work claim workflow contract PASSED.' -ForegroundColor Green
             exit 0
           }
