@@ -70,6 +70,11 @@ jobs:
           sdkmanager --channel=3 "platforms;android-37.0" "build-tools;37.0.0"
           if ($LASTEXITCODE -ne 0) { throw 'ANDROID_SDK_INSTALL_FAILED' }
 
+      - name: Validate checked-in Gradle wrapper
+        id: wrapper_validation
+        if: ${{ steps.validation_plan.outputs.execute == 'true' }}
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+
       - name: Set up Gradle cache
         if: ${{ steps.validation_plan.outputs.execute == 'true' }}
         id: validation_proof_3
@@ -92,7 +97,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: ${{ steps.validation_plan.outputs.receipt }}
-        if: ${{ success() && steps.validation_plan.outputs.execute == 'true' && steps.validation_proof_0.outcome == 'success' && steps.validation_proof_1.outcome == 'success' && steps.validation_proof_2.outcome == 'success' && steps.validation_proof_3.outcome == 'success' && steps.validation_proof_4.outcome == 'success' && steps.validation_proof_5.outcome == 'success' }}
+        if: ${{ success() && steps.validation_plan.outputs.execute == 'true' && steps.wrapper_validation.outcome == 'success' && steps.validation_proof_0.outcome == 'success' && steps.validation_proof_1.outcome == 'success' && steps.validation_proof_2.outcome == 'success' && steps.validation_proof_3.outcome == 'success' && steps.validation_proof_4.outcome == 'success' && steps.validation_proof_5.outcome == 'success' }}
         shell: powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         working-directory: ${{ github.workspace }}
         run: Write-Host 'Complete source checks executed; this receipt grants no package or live authority.'

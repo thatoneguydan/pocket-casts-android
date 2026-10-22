@@ -21,7 +21,8 @@ concurrency:
 jobs:
   validate-active-work-claim:
     name: Validate active-work ownership
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request_target' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Windows, X64, glass-builder]
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ github.token }}

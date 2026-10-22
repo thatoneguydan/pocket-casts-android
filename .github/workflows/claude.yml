@@ -1,3 +1,4 @@
+# Personal fork: upstream-only automation stays disabled; custom-player owns build/proof.
 # Runs Claude on demand with a @claude mention.
 #
 # This workflow is shared between the Android, iOS, and Web Player repos.
@@ -15,11 +16,8 @@ on:
 
 jobs:
   claude:
-    # Only run when @claude is mentioned AND the author is a trusted
-    # org member/collaborator. This is defense-in-depth on top of the
-    # action's built-in write-access check.
-    if: |
-      (
+    if: >-
+      github.repository == 'Automattic/pocket-casts-android' && ((
         (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
         (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
         (github.event_name == 'pull_request_review' && contains(github.event.review.body || '', '@claude'))
@@ -31,7 +29,10 @@ jobs:
         github.event.review.author_association == 'OWNER' ||
         github.event.review.author_association == 'MEMBER' ||
         github.event.review.author_association == 'COLLABORATOR'
-      )
+      ))
+    # Only run when @claude is mentioned AND the author is a trusted
+    # org member/collaborator. This is defense-in-depth on top of the
+    # action's built-in write-access check.
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -14,6 +14,7 @@
         "Set up Java 21",
         "Set up Android SDK",
         "Install Android 17 SDK",
+        "Validate checked-in Gradle wrapper",
         "Set up Gradle cache",
         "Build debugProd APK",
         "Upload installable APK"

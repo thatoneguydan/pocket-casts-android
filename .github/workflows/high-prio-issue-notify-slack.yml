@@ -1,3 +1,4 @@
+# Personal fork: upstream-only automation stays disabled; custom-player owns build/proof.
 name: Notify Slack when "[Priority] High" label is applied to an Issue or PR.
 
 on:
@@ -8,6 +9,8 @@ on:
 
 jobs:
   notify_slack:
+    if: >-
+      github.repository == 'Automattic/pocket-casts-android'
     runs-on: ubuntu-latest
     steps:
       - name: Check for "[Priority] High" Label

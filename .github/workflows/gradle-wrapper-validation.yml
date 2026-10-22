@@ -1,8 +1,11 @@
+# Personal fork: upstream-only automation stays disabled; custom-player owns build/proof.
 name: "Validate Gradle Wrapper"
 on: [push, pull_request]
 
 jobs:
   validation:
+    if: >-
+      github.repository == 'Automattic/pocket-casts-android'
     name: "Validation"
     runs-on: ubuntu-latest
     steps:

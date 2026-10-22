@@ -1,3 +1,4 @@
+# Personal fork: upstream-only automation stays disabled; custom-player owns build/proof.
 # Automatically posts a Claude code review on every pull request.
 #
 # This workflow is shared between the Android, iOS, and Web Player repos.
@@ -16,11 +17,9 @@ concurrency:
 
 jobs:
   claude-review:
-    # Skip draft pushes and cross-repo/dependabot PRs. Drafts still review on open/reopen/ready.
     if: >-
-      !(github.event.pull_request.draft == true && github.event.action == 'synchronize') &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor != 'dependabot[bot]'
+      github.repository == 'Automattic/pocket-casts-android' && (!(github.event.pull_request.draft == true && github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+    # Skip draft pushes and cross-repo/dependabot PRs. Drafts still review on open/reopen/ready.
 
     runs-on: ubuntu-latest
     permissions:
