@@ -24,7 +24,8 @@
       ],
       "buildSteps": 1,
       "alwaysCurrent": [
-        "Exact-source APK generation and original artifact eligibility"
+        "Exact-source APK generation and original artifact eligibility",
+        "Exact Glass/Pocket runner identity and non-admin account boundary"
       ],
       "artifacts": [],
       "deliversPackage": true,

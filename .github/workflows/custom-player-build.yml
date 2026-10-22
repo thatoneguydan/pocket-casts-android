@@ -30,6 +30,16 @@ jobs:
       - name: Check out custom player branch
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
+      - name: Verify Glass runner identity
+        shell: powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+          if ($env:COMPUTERNAME -ine 'GLASS' -or $env:RUNNER_NAME -cne 'glass-pocket-casts-android') { throw 'WRONG_POCKET_RUNNER' }
+          if ($identity.Name -ine 'NT AUTHORITY\NETWORK SERVICE') { throw 'WRONG_POCKET_IDENTITY' }
+          $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+          if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'POCKET_RUNNER_MUST_BE_NONADMIN' }
+          Write-Host 'POCKET_RUNNER_BOUNDARY=GLASS/NETWORK_SERVICE/NONADMIN'
+
       - name: Verify affected-validation routing fixtures
         shell: powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ". '{0}'"
         working-directory: ${{ github.workspace }}
@@ -84,7 +94,7 @@ jobs:
         if: ${{ steps.validation_plan.outputs.execute == 'true' }}
         id: validation_proof_4
         run: |
-          .\gradlew.bat :app:assembleDebugProd --stacktrace
+          .\gradlew.bat --no-daemon --max-workers=2 :app:assembleDebugProd --stacktrace
           if ($LASTEXITCODE -ne 0) { throw 'APK_BUILD_FAILED' }
 
       - name: Upload installable APK
